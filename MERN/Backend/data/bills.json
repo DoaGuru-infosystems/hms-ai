@@ -1,0 +1,50 @@
+[
+  {
+    "id": "1",
+    "invoiceNo": "SI-000027",
+    "patientName": "Arjun Verma",
+    "date": "2024-05-10",
+    "subtotal": 1080,
+    "discount": 80,
+    "total": 1000,
+    "paid": 1000,
+    "paymentType": "Cash",
+    "status": "Paid"
+  },
+  {
+    "id": "2",
+    "invoiceNo": "SI-000028",
+    "patientName": "Sunita Patel",
+    "date": "2024-05-12",
+    "subtotal": 2260,
+    "discount": 260,
+    "total": 2000,
+    "paid": 0,
+    "paymentType": "Insurance",
+    "status": "Pending"
+  },
+  {
+    "id": "3",
+    "invoiceNo": "SI-000029",
+    "patientName": "Rahul Singh",
+    "date": "2024-05-15",
+    "subtotal": 3000,
+    "discount": 0,
+    "total": 3000,
+    "paid": 1500,
+    "paymentType": "Cash",
+    "status": "Partial"
+  },
+  {
+    "id": "4",
+    "invoiceNo": "SI-000030",
+    "patientName": "Fatima Sheikh",
+    "date": "2024-05-08",
+    "subtotal": 45000,
+    "discount": 0,
+    "total": 45000,
+    "paid": 45000,
+    "paymentType": "Insurance",
+    "status": "Paid"
+  }
+]

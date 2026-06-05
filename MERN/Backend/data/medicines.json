@@ -1,0 +1,68 @@
+[
+  {
+    "id": "1",
+    "name": "PARACETAMOL 500mg",
+    "category": "Pharmacy",
+    "type": "Generic",
+    "uom": "Tablet",
+    "price": 5,
+    "stock": 20000,
+    "reorder": 1000,
+    "status": "In Stock"
+  },
+  {
+    "id": "2",
+    "name": "AMOXICILLIN 500mg",
+    "category": "Anti-Bacterial",
+    "type": "Generic",
+    "uom": "Tablet",
+    "price": 12,
+    "stock": 8000,
+    "reorder": 500,
+    "status": "In Stock"
+  },
+  {
+    "id": "3",
+    "name": "DIPHENHYDRAMINE",
+    "category": "Anti-Allergic",
+    "type": "Generic",
+    "uom": "Tablet",
+    "price": 25,
+    "stock": 10000,
+    "reorder": 100,
+    "status": "In Stock"
+  },
+  {
+    "id": "4",
+    "name": "EPINEPHRINE",
+    "category": "Anti-Asthmatic",
+    "type": "Branded",
+    "uom": "Each",
+    "price": 45,
+    "stock": 54000,
+    "reorder": 150,
+    "status": "In Stock"
+  },
+  {
+    "id": "5",
+    "name": "ATROPINE",
+    "category": "Anti-Allergic",
+    "type": "Generic",
+    "uom": "Tablet",
+    "price": 25,
+    "stock": 150,
+    "reorder": 500,
+    "status": "Low Stock"
+  },
+  {
+    "id": "6",
+    "name": "IBUPROFEN 400mg",
+    "category": "Pharmacy",
+    "type": "Generic",
+    "uom": "Tablet",
+    "price": 8,
+    "stock": 12000,
+    "reorder": 500,
+    "status": "In Stock"
+  }
+]

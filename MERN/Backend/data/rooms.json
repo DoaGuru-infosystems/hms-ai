@@ -1,0 +1,56 @@
+[
+  {
+    "id": "7",
+    "category": "General Ward",
+    "name": "101",
+    "floor": 1,
+    "rate": 150,
+    "totalBeds": 30,
+    "vacantBeds": 28
+  },
+  {
+    "id": "8",
+    "category": "General Ward",
+    "name": "102",
+    "floor": 1,
+    "rate": 150,
+    "totalBeds": 30,
+    "vacantBeds": 29
+  },
+  {
+    "id": "9",
+    "category": "General Ward",
+    "name": "103",
+    "floor": 1,
+    "rate": 150,
+    "totalBeds": 30,
+    "vacantBeds": 30
+  },
+  {
+    "id": "34",
+    "category": "Executive Deluxe",
+    "name": "EXE101",
+    "floor": 1,
+    "rate": 1500,
+    "totalBeds": 5,
+    "vacantBeds": 5
+  },
+  {
+    "id": "35",
+    "category": "Operation Theater",
+    "name": "Operation Room 1",
+    "floor": 1,
+    "rate": 500,
+    "totalBeds": 2,
+    "vacantBeds": 2
+  },
+  {
+    "id": "36",
+    "category": "ICU",
+    "name": "ICU-A",
+    "floor": 2,
+    "rate": 3000,
+    "totalBeds": 10,
+    "vacantBeds": 7
+  }
+]

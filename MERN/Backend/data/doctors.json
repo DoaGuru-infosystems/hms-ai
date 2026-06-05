@@ -1,0 +1,41 @@
+[
+  {
+    "id": "00007",
+    "empNo": "EMP-007",
+    "firstName": "Dr. Rajesh",
+    "lastName": "Kumar",
+    "role": "Doctor",
+    "department": "Cardiology",
+    "designation": "Cardiologist",
+    "email": "dr.rajesh@medicare.com",
+    "phone": "09234567890",
+    "status": "Active",
+    "joinDate": "2019-06-10"
+  },
+  {
+    "id": "00008",
+    "empNo": "EMP-008",
+    "firstName": "Dr. Priya",
+    "lastName": "Sharma",
+    "role": "Doctor",
+    "department": "Neurology",
+    "designation": "Neurologist",
+    "email": "dr.priya@medicare.com",
+    "phone": "09345678901",
+    "status": "Active",
+    "joinDate": "2021-03-20"
+  },
+  {
+    "id": "00011",
+    "empNo": "EMP-011",
+    "firstName": "Dr. Aisha",
+    "lastName": "Malik",
+    "role": "Doctor",
+    "department": "General Surgery",
+    "designation": "Surgeon",
+    "email": "dr.aisha@medicare.com",
+    "phone": "09678901234",
+    "status": "Active",
+    "joinDate": "2020-09-15"
+  }
+]

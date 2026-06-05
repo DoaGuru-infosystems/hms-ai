@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "patientId": "1",
+    "patientName": "Arjun Verma",
+    "doctorId": "00007",
+    "doctor": "Dr. Rajesh Kumar",
+    "date": "2024-05-25",
+    "time": "09:00 AM",
+    "reason": "Follow-up: Hypertension",
+    "status": "Scheduled",
+    "department": "Cardiology"
+  },
+  {
+    "id": 2,
+    "patientId": "2",
+    "patientName": "Sunita Patel",
+    "doctorId": "00008",
+    "doctor": "Dr. Priya Sharma",
+    "date": "2024-05-25",
+    "time": "10:30 AM",
+    "reason": "Headache evaluation",
+    "status": "Confirmed",
+    "department": "Neurology"
+  },
+  {
+    "id": 3,
+    "patientId": "3",
+    "patientName": "Rahul Singh",
+    "doctorId": "00007",
+    "doctor": "Dr. Rajesh Kumar",
+    "date": "2024-05-26",
+    "time": "11:00 AM",
+    "reason": "Cardiac checkup",
+    "status": "Scheduled",
+    "department": "Cardiology"
+  },
+  {
+    "id": 4,
+    "patientId": "4",
+    "patientName": "Fatima Sheikh",
+    "doctorId": "00011",
+    "doctor": "Dr. Aisha Malik",
+    "date": "2024-05-24",
+    "time": "02:00 PM",
+    "reason": "Post-op wound check",
+    "status": "Completed",
+    "department": "General Surgery"
+  },
+  {
+    "id": 5,
+    "patientId": "6",
+    "patientName": "Meera Nair",
+    "doctorId": "00008",
+    "doctor": "Dr. Priya Sharma",
+    "date": "2024-05-27",
+    "time": "09:30 AM",
+    "reason": "MRI scan follow-up",
+    "status": "Scheduled",
+    "department": "Neurology"
+  }
+]
