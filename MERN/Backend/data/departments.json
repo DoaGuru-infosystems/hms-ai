@@ -1,0 +1,68 @@
+[
+  {
+    "id": "1",
+    "code": "MIS",
+    "name": "Management Information System",
+    "active": true
+  },
+  {
+    "id": "2",
+    "code": "FD",
+    "name": "Front Desk",
+    "active": true
+  },
+  {
+    "id": "4",
+    "code": "CARD",
+    "name": "Cardiology",
+    "active": true
+  },
+  {
+    "id": "5",
+    "code": "ANAE",
+    "name": "Anaesthetics",
+    "active": true
+  },
+  {
+    "id": "8",
+    "code": "CAS",
+    "name": "Casualty",
+    "active": true
+  },
+  {
+    "id": "11",
+    "code": "ICU",
+    "name": "Intensive Care Unit (ICU)",
+    "active": true
+  },
+  {
+    "id": "12",
+    "code": "RAD",
+    "name": "Radiography",
+    "active": true
+  },
+  {
+    "id": "17",
+    "code": "GEN",
+    "name": "General Surgery",
+    "active": true
+  },
+  {
+    "id": "23",
+    "code": "NEURO",
+    "name": "Neurology",
+    "active": true
+  },
+  {
+    "id": "29",
+    "code": "ORTH",
+    "name": "Orthopaedics",
+    "active": true
+  },
+  {
+    "id": "36",
+    "code": "DENT",
+    "name": "Dental Department",
+    "active": true
+  }
+]

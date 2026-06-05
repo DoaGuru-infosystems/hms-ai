@@ -1,0 +1,41 @@
+[
+  {
+    "id": "1",
+    "ioId": "OP-000017",
+    "patientNo": "P-000001",
+    "patientName": "Arjun Verma",
+    "doctor": "Dr. Rajesh Kumar",
+    "dateVisit": "2024-05-10",
+    "department": "Cardiology",
+    "status": "Discharged",
+    "isPaid": true,
+    "complaints": "Chest pain, shortness of breath",
+    "diagnosis": "Hypertension Stage 1"
+  },
+  {
+    "id": "2",
+    "ioId": "OP-000018",
+    "patientNo": "P-000002",
+    "patientName": "Sunita Patel",
+    "doctor": "Dr. Priya Sharma",
+    "dateVisit": "2024-05-12",
+    "department": "Neurology",
+    "status": "Active",
+    "isPaid": false,
+    "complaints": "Severe headache, dizziness",
+    "diagnosis": "Migraine"
+  },
+  {
+    "id": "3",
+    "ioId": "OP-000019",
+    "patientNo": "P-000003",
+    "patientName": "Rahul Singh",
+    "doctor": "Dr. Rajesh Kumar",
+    "dateVisit": "2024-05-15",
+    "department": "Cardiology",
+    "status": "Active",
+    "isPaid": false,
+    "complaints": "Fatigue, palpitations",
+    "diagnosis": "Arrhythmia (evaluation)"
+  }
+]

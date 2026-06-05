@@ -1,0 +1,41 @@
+[
+  {
+    "id": "1",
+    "ioId": "IP-000024",
+    "patientNo": "P-000004",
+    "patientName": "Fatima Sheikh",
+    "doctor": "Dr. Aisha Malik",
+    "dateAdmit": "2024-05-08",
+    "department": "General Surgery",
+    "room": "101",
+    "bed": "RM-101-1",
+    "status": "Admitted",
+    "diagnosis": "Acute Appendicitis"
+  },
+  {
+    "id": "2",
+    "ioId": "IP-000025",
+    "patientNo": "P-000005",
+    "patientName": "Ferdinand Dela Cruz",
+    "doctor": "Dr. Rajesh Kumar",
+    "dateAdmit": "2024-05-14",
+    "department": "Cardiology",
+    "room": "102",
+    "bed": "RM-102-2",
+    "status": "Discharged",
+    "diagnosis": "Congestive Heart Failure"
+  },
+  {
+    "id": "3",
+    "ioId": "IP-000026",
+    "patientNo": "P-000006",
+    "patientName": "Meera Nair",
+    "doctor": "Dr. Priya Sharma",
+    "dateAdmit": "2024-05-18",
+    "department": "Neurology",
+    "room": "103",
+    "bed": "RM-103-3",
+    "status": "Admitted",
+    "diagnosis": "Stroke"
+  }
+]
