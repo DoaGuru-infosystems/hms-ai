@@ -33,7 +33,7 @@ exports.getAllIPD = async (req, res, next) => {
       `);
       return res.json(rows);
     } else {
-      const data = dbJson.getIpdAdmissions();
+      const data = dbJson.getIpdRecords();
       // Ensure all fallback items have the redundant keys too
       return res.json(data.map(i => ({
         ...i,
@@ -64,6 +64,12 @@ exports.createIPD = async (req, res, next) => {
     const ipdId = `IP-${Math.floor(100000 + Math.random() * 900000)}`;
 
     if (isMysqlConnected()) {
+      // Check if patient is already admitted
+      const checkAdmitted = await db.query('SELECT ipdId FROM ipd_admissions WHERE patient_no = ? AND status = "Admitted"', [patientNo]);
+      if (checkAdmitted.length > 0) {
+        return res.status(400).json({ error: 'Patient is already admitted to a ward and cannot be re-admitted until discharged.' });
+      }
+
       const dRows = await db.query('SELECT user_id FROM users WHERE CONCAT("Dr. ", firstname, " ", lastname) = ? OR CONCAT(firstname, " ", lastname) = ? OR user_id = ?', [doctor, doctor, doctor]);
       const doctorId = dRows[0]?.user_id || 1;
 
@@ -107,7 +113,13 @@ exports.createIPD = async (req, res, next) => {
         status: 'Admitted'
       });
     } else {
-      const ipd = dbJson.getIpdAdmissions();
+      const ipd = dbJson.getIpdRecords();
+      // Check if patient is already admitted
+      const checkAdmitted = ipd.some(i => i.patientNo === patientNo && i.status === 'Admitted');
+      if (checkAdmitted) {
+        return res.status(400).json({ error: 'Patient is already admitted to a ward and cannot be re-admitted until discharged.' });
+      }
+
       const patients = dbJson.getPatients();
       const targetPatient = patients.find(p => p.patientNo === patientNo || p.id === patientNo);
       const patientName = targetPatient ? `${targetPatient.firstName} ${targetPatient.lastName}` : 'Patient';
@@ -132,7 +144,7 @@ exports.createIPD = async (req, res, next) => {
       };
 
       ipd.push(newIpd);
-      dbJson.saveIpdAdmissions(ipd);
+      dbJson.saveIpdRecords(ipd);
       return res.status(201).json(newIpd);
     }
   } catch (error) {
@@ -143,7 +155,7 @@ exports.createIPD = async (req, res, next) => {
 exports.updateIPD = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status, roomNo, bedNo } = req.body;
+    const { status, roomNo, bedNo, complaints, diagnosis } = req.body;
     const roomVal = roomNo || req.body.room;
     const bedVal = bedNo || req.body.bed;
 
@@ -165,14 +177,22 @@ exports.updateIPD = async (req, res, next) => {
         query += 'bed_no = ?, ';
         params.push(bedVal);
       }
+      if (complaints !== undefined) {
+        query += 'complaints = ?, ';
+        params.push(complaints);
+      }
+      if (diagnosis !== undefined) {
+        query += 'diagnosis = ?, ';
+        params.push(diagnosis);
+      }
       query = query.slice(0, -2);
       query += ' WHERE ipdId = ?';
       params.push(id);
 
       await db.query(query, params);
-      return res.json({ id, status, roomNo: roomVal, bedNo: bedVal });
+      return res.json({ id, status, roomNo: roomVal, bedNo: bedVal, complaints, diagnosis });
     } else {
-      const ipd = dbJson.getIpdAdmissions();
+      const ipd = dbJson.getIpdRecords();
       const idx = ipd.findIndex(i => i.id === id || i.ipdId === id);
       if (idx === -1) return res.status(404).json({ error: 'IPD Record not found' });
 
@@ -185,8 +205,10 @@ exports.updateIPD = async (req, res, next) => {
         ipd[idx].bedNo = bedVal;
         ipd[idx].bed = bedVal;
       }
+      if (complaints !== undefined) ipd[idx].complaints = complaints;
+      if (diagnosis !== undefined) ipd[idx].diagnosis = diagnosis;
 
-      dbJson.saveIpdAdmissions(ipd);
+      dbJson.saveIpdRecords(ipd);
       return res.json(ipd[idx]);
     }
   } catch (error) {

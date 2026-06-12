@@ -9,20 +9,33 @@ exports.getAllPatients = async (req, res, next) => {
     if (isMysqlConnected()) {
       const rows = await db.query(`
         SELECT 
-          patient_no as id,
-          patient_no as patientNo,
-          firstname,
-          lastname,
-          gender,
-          age,
-          phone_no as phone,
-          email_address as email,
-          InActive
-        FROM patient_personal_info
-        WHERE InActive = 0
-        ORDER BY firstname ASC
+          p.patient_no as id,
+          p.patient_no as patientNo,
+          p.firstname as firstName,
+          p.lastname as lastName,
+          p.gender,
+          p.age,
+          p.blood_group as bloodGroup,
+          p.phone_no as phone,
+          p.email_address as email,
+          p.address1 as address,
+          DATE_FORMAT(p.date_entry, '%Y-%m-%d') as dateEntry,
+          COALESCE(
+            (SELECT status FROM ipd_admissions WHERE patient_no = p.patient_no ORDER BY admitDate DESC, ipdId DESC LIMIT 1),
+            'Active'
+          ) as status,
+          p.InActive
+        FROM patient_personal_info p
+        WHERE p.InActive = 0
+        ORDER BY p.firstname ASC
       `);
-      return res.json(rows);
+      return res.json(rows.map(r => ({
+        ...r,
+        bloodGroup: r.bloodGroup || 'O+',
+        address: r.address || 'Not Provided',
+        dateEntry: r.dateEntry || getTodayDate(),
+        status: r.status || 'Active'
+      })));
     } else {
       const patients = dbJson.getPatients().filter(p => p.status !== 'Inactive');
       return res.json(patients);

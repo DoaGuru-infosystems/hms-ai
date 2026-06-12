@@ -1,10 +1,6 @@
 import { Bell, ChevronRight, Menu } from 'lucide-react';
 
 export default function Topbar({ title, user }) {
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-  const dateStr = now.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' });
-
   const handleToggle = () => {
     const sidebar = document.querySelector('.sidebar');
     const overlay = document.querySelector('.sidebar-overlay');
@@ -12,59 +8,62 @@ export default function Topbar({ title, user }) {
     if (overlay) overlay.classList.toggle('open');
   };
 
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+  const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+  const initials = user ? user.trim().slice(0, 1).toUpperCase() : 'A';
+
   return (
     <div className="topbar">
-      {/* Left — breadcrumb & menu toggle */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <button 
-          className="btn-ghost sidebar-toggle" 
+      {/* Left */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button
+          className="btn-ghost sidebar-toggle"
           onClick={handleToggle}
-          style={{ 
-            display: 'none', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            width: 36, 
-            height: 36, 
-            borderRadius: 10,
-            cursor: 'pointer',
-            border: 'none',
-            background: 'var(--primary-soft)'
+          style={{
+            display: 'none', alignItems: 'center', justifyContent: 'center',
+            width: 34, height: 34, borderRadius: 8, cursor: 'pointer',
+            border: '1px solid var(--surface-border)', background: 'transparent'
           }}
         >
-          <Menu size={18} color="var(--primary)" />
+          <Menu size={17} color="var(--text-secondary)" />
         </button>
-        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }} className="topbar-breadcrumb-brand">MediCare</span>
+        <span
+          style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}
+          className="topbar-breadcrumb-brand"
+        >
+          MediCare
+        </span>
         <ChevronRight size={12} color="var(--text-light)" className="topbar-breadcrumb-arrow" />
         <h2 className="topbar-title">{title}</h2>
       </div>
 
       {/* Right */}
       <div className="topbar-right">
-        {/* Date / Time chip */}
+        {/* Date / Time */}
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '6px 14px', borderRadius: 8,
-          background: 'var(--primary-soft)',
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '5px 12px', borderRadius: 7,
+          background: 'var(--bg)',
           border: '1px solid var(--surface-border)',
-          fontSize: 12, fontWeight: 700, color: 'var(--primary)',
-          letterSpacing: 0.2
+          fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)',
+          letterSpacing: 0.1
         }}>
           <span>{dateStr}</span>
           <span style={{ color: 'var(--text-light)', fontWeight: 400 }}>·</span>
-          <span>{timeStr}</span>
+          <span style={{ color: 'var(--primary)' }}>{timeStr}</span>
         </div>
 
         {/* Bell */}
         <div className="topbar-badge">
-          <Bell size={16} color="var(--text-secondary)" />
+          <Bell size={15} color="var(--text-secondary)" />
           <span className="badge-dot" />
         </div>
 
         {/* Avatar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer' }}>
-          <div className="avatar-sm">
-            {user ? user[0].toUpperCase() : 'A'}
-          </div>
+        <div className="avatar-sm">
+          {initials}
         </div>
       </div>
     </div>

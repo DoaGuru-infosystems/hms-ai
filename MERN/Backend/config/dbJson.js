@@ -111,6 +111,8 @@ initFile('nurse_bed_side.json', []);
 initFile('nurse_patient_history.json', []);
 initFile('nurse_discharge.json', []);
 initFile('nurse_room_transfer.json', []);
+initFile('patient_labs.json', []);
+initFile('patient_operations.json', []);
 
 // DB Helper functions
 const readData = (fileName) => {
@@ -179,5 +181,11 @@ module.exports = {
   saveNurseDischarge: (data) => writeData('nurse_discharge.json', data),
 
   getNurseRoomTransfer: () => readData('nurse_room_transfer.json'),
-  saveNurseRoomTransfer: (data) => writeData('nurse_room_transfer.json', data)
+  saveNurseRoomTransfer: (data) => writeData('nurse_room_transfer.json', data),
+
+  getPatientLabs: () => readData('patient_labs.json'),
+  savePatientLabs: (data) => writeData('patient_labs.json', data),
+
+  getPatientOperations: () => readData('patient_operations.json'),
+  savePatientOperations: (data) => writeData('patient_operations.json', data)
 };

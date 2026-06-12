@@ -45,6 +45,12 @@ exports.createOPD = async (req, res, next) => {
     const ioId = `OP-${Math.floor(100000 + Math.random() * 900000)}`;
 
     if (isMysqlConnected()) {
+      // Check if patient is currently admitted in IPD
+      const checkAdmitted = await db.query('SELECT ipdId FROM ipd_admissions WHERE patient_no = ? AND status = "Admitted"', [patientNo]);
+      if (checkAdmitted.length > 0) {
+        return res.status(400).json({ error: 'Patient is currently admitted to a ward and cannot register for OPD until discharged.' });
+      }
+
       const dRows = await db.query('SELECT user_id FROM users WHERE CONCAT("Dr. ", firstname, " ", lastname) = ? OR CONCAT(firstname, " ", lastname) = ? OR user_id = ?', [doctor, doctor, doctor]);
       const doctorId = dRows[0]?.user_id || 1;
 
@@ -82,6 +88,13 @@ exports.createOPD = async (req, res, next) => {
       });
     } else {
       const opd = dbJson.getOpdRecords();
+      // Check if patient is currently admitted in IPD JSON DB
+      const ipdRecords = dbJson.getIpdRecords();
+      const checkAdmitted = ipdRecords.some(i => i.patientNo === patientNo && i.status === 'Admitted');
+      if (checkAdmitted) {
+        return res.status(400).json({ error: 'Patient is currently admitted to a ward and cannot register for OPD until discharged.' });
+      }
+
       const patients = dbJson.getPatients();
       const targetPatient = patients.find(p => p.patientNo === patientNo || p.id === patientNo);
       const patientName = targetPatient ? `${targetPatient.firstName} ${targetPatient.lastName}` : 'Patient';
@@ -112,7 +125,7 @@ exports.createOPD = async (req, res, next) => {
 exports.updateOPD = async (req, res, next) => {
   try {
     const { ioId } = req.params;
-    const { status, isPaid } = req.body;
+    const { status, isPaid, complaints, diagnosis } = req.body;
 
     if (isMysqlConnected()) {
       const check = await db.query('SELECT * FROM opd_records WHERE ioId = ?', [ioId]);
@@ -128,12 +141,20 @@ exports.updateOPD = async (req, res, next) => {
         query += 'isPaid = ?, ';
         params.push(isPaid === true || isPaid === 'true' || isPaid === 1 ? 1 : 0);
       }
+      if (complaints !== undefined) {
+        query += 'complaints = ?, ';
+        params.push(complaints);
+      }
+      if (diagnosis !== undefined) {
+        query += 'diagnosis = ?, ';
+        params.push(diagnosis);
+      }
       query = query.slice(0, -2);
       query += ' WHERE ioId = ?';
       params.push(ioId);
 
       await db.query(query, params);
-      return res.json({ ioId, status, isPaid });
+      return res.json({ ioId, status, isPaid, complaints, diagnosis });
     } else {
       const opd = dbJson.getOpdRecords();
       const idx = opd.findIndex(o => o.ioId === ioId);
@@ -141,6 +162,8 @@ exports.updateOPD = async (req, res, next) => {
 
       if (status !== undefined) opd[idx].status = status;
       if (isPaid !== undefined) opd[idx].isPaid = (isPaid === true || isPaid === 'true' || isPaid === 1);
+      if (complaints !== undefined) opd[idx].complaints = complaints;
+      if (diagnosis !== undefined) opd[idx].diagnosis = diagnosis;
 
       dbJson.saveOpdRecords(opd);
       return res.json(opd[idx]);

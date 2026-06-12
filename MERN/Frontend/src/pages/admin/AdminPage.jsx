@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, Trash2, Edit2, Save } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Trash2, Edit2, Save, Loader2 } from 'lucide-react';
 import Topbar from '../../components/Topbar';
 
 const pageMap = {
@@ -23,116 +23,379 @@ const pageMap = {
   pages: { title: 'System Pages / Access Control', cols: ['Page Name','URL','Description','Role Access'] },
 };
 
-const demoRows = {
-  departments: [['Cardiology','Heart and circulatory system','Dr. Rajesh Kumar','Active'],['General Medicine','General health issues','Dr. Anita Sharma','Active'],['Neurology','Brain and nervous system','Dr. Priya Mehta','Active'],['Orthopedics','Bones and muscles','Dr. Vikram Singh','Active'],['Pediatrics','Children health','Dr. Kavita Reddy','Active']],
-  designations: [['Senior Doctor','General Medicine','Level 5','Active'],['Junior Doctor','All Departments','Level 3','Active'],['Head Nurse','ICU','Level 4','Active'],['Staff Nurse','All Wards','Level 2','Active'],['Receptionist','Front Desk','Level 1','Active']],
-  'bill-groups': [['Consultation','Doctor consultation fees','Active'],['Surgery','Surgical procedures','Active'],['Laboratory','Diagnostic tests','Active'],['Pharmacy','Medicine costs','Active'],['Room Charges','Bed and room fees','Active']],
-  'bill-particulars': [['OPD Consultation','Consultation',350,'Active'],['IPD Doctor Visit','Consultation',500,'Active'],['Appendectomy','Surgery',45000,'Active'],['CBC Test','Laboratory',350,'Active'],['Private Room (per day)','Room Charges',2500,'Active']],
-  complaints: [['Fever','General','Active'],['Headache','Neurological','Active'],['Chest Pain','Cardiac','Active'],['Abdominal Pain','Gastro','Active'],['Cough & Cold','Respiratory','Active']],
-  diagnosis: [['Dengue Fever / A90','Infectious','Active'],['Hypertension / I10','Cardiovascular','Active'],['Type 2 Diabetes / E11','Metabolic','Active'],['Appendicitis / K37','Surgical','Active'],['Pneumonia / J18','Respiratory','Active']],
-  'surgical-packages': [['Appendectomy Package','Appendectomy',45000,'Active'],['Cataract Surgery','Ophthalmology',25000,'Active'],['LSCS Package','Obstetrics',35000,'Active'],['Hernia Repair','General Surgery',30000,'Active']],
-  insurance: [['Star Health Insurance','Ramesh Kumar','+91 9001200010','star@health.com','Active'],['New India Assurance','Priya Joshi','+91 9001200020','nia@ins.com','Active'],['HDFC ERGO','Amit Verma','+91 9001200030','hdfc@ergo.com','Active']],
-  'medicine-categories': [['Analgesics / Pain Killers','Pain relief medications','Active'],['Antibiotics','Bacterial infection treatment','Active'],['Antihypertensives','Blood pressure management','Active'],['Antipyretics','Fever reduction','Active'],['Vitamins & Supplements','Nutritional support','Active']],
-  drugs: [['Paracetamol 500mg','Analgesics','Tablet',50,'Active'],['Amoxicillin 500mg','Antibiotics','Capsule',30,'Active'],['Metformin 500mg','Antidiabetics','Tablet',50,'Active'],['Amlodipine 5mg','Antihypertensives','Tablet',30,'Active'],['Omeprazole 20mg','Antacids','Capsule',40,'Active']],
-  'acknowledge-receipt': [['AR-001','Arjun Verma',1000,'2024-05-10','Admin','Acknowledged'],['AR-002','Sunita Patel',2000,'2024-05-12','Admin','Pending']],
-  pages: [['Dashboard','/dashboard','Main dashboard','All'],['Patient Master','/patient/master','Patient list','Admin, Receptionist'],['OPD Registration','/opd/registration','Register OPD','Receptionist'],['IPD Admit','/ipd/admit','Admit patient','Receptionist'],['Billing','/billing/list','Invoice management','Cashier, Admin']],
+const mapItemToRow = (page, item) => {
+  switch (page) {
+    case 'departments':
+      return [item.name || '', item.description || '', item.headDoctor || 'Dr. Rajesh Kumar', item.status || 'Active'];
+    case 'designations':
+      return [item.name || '', item.department || '', item.level || '', item.status || 'Active'];
+    case 'bill-groups':
+      return [item.name || '', item.description || '', item.status || 'Active'];
+    case 'bill-particulars':
+      return [item.name || '', item.group || '', Number(item.amount) || 0, item.status || 'Active'];
+    case 'complaints':
+      return [item.complaint || '', item.category || '', item.status || 'Active'];
+    case 'diagnosis':
+      return [item.diagnosis || '', item.category || '', item.status || 'Active'];
+    case 'surgical-packages':
+      return [item.name || '', item.procedure || '', Number(item.price) || 0, item.status || 'Active'];
+    case 'insurance':
+      return [item.name || '', item.contact || '', item.phone || '', item.email || '', item.status || 'Active'];
+    case 'medicine-categories':
+      return [item.name || '', item.description || '', item.status || 'Active'];
+    case 'drugs':
+      return [item.name || '', item.category || '', item.unit || '', Number(item.reorder) || 0, item.status || 'Active'];
+    case 'acknowledge-receipt':
+      return [item.receiptNo || '', item.patient || '', Number(item.amount) || 0, item.date || '', item.by || '', item.status || 'Pending'];
+    case 'pages':
+      return [item.name || '', item.url || '', item.description || '', item.roleAccess || 'All'];
+    default:
+      return [];
+  }
+};
+
+const mapColsToItem = (page, colValues) => {
+  switch (page) {
+    case 'departments':
+      return { name: colValues[0], description: colValues[1], headDoctor: colValues[2], status: colValues[3] };
+    case 'designations':
+      return { name: colValues[0], department: colValues[1], level: colValues[2], status: colValues[3] };
+    case 'bill-groups':
+      return { name: colValues[0], description: colValues[1], status: colValues[2] };
+    case 'bill-particulars':
+      return { name: colValues[0], group: colValues[1], amount: Number(colValues[2]), status: colValues[3] };
+    case 'complaints':
+      return { complaint: colValues[0], category: colValues[1], status: colValues[2] };
+    case 'diagnosis':
+      return { diagnosis: colValues[0], category: colValues[1], status: colValues[2] };
+    case 'surgical-packages':
+      return { name: colValues[0], procedure: colValues[1], price: Number(colValues[2]), status: colValues[3] };
+    case 'insurance':
+      return { name: colValues[0], contact: colValues[1], phone: colValues[2], email: colValues[3], status: colValues[4] };
+    case 'medicine-categories':
+      return { name: colValues[0], description: colValues[1], status: colValues[2] };
+    case 'drugs':
+      return { name: colValues[0], category: colValues[1], unit: colValues[2], reorder: Number(colValues[3]), status: colValues[4] };
+    case 'acknowledge-receipt':
+      return { receiptNo: colValues[0], patient: colValues[1], amount: Number(colValues[2]), date: colValues[3], by: colValues[4], status: colValues[5] };
+    case 'pages':
+      return { name: colValues[0], url: colValues[1], description: colValues[2], roleAccess: colValues[3] };
+    default:
+      return {};
+  }
 };
 
 export default function AdminPage({ page = 'departments', user }) {
   const config = pageMap[page] || pageMap.departments;
   const [showForm, setShowForm] = useState(false);
+  const [formValues, setFormValues] = useState({});
   const [formData, setFormData] = useState({});
+  const [rawItems, setRawItems] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
 
-  const rows = demoRows[page] || [];
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`http://localhost:5001/api/settings/${page}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (config.fields) {
+          setFormData(data || {});
+        } else {
+          setRawItems(data || []);
+        }
+      }
+    } catch (e) {
+      console.error('Error fetching admin page data:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setShowForm(false);
+    setEditingItem(null);
+    setFormValues({});
+    fetchData();
+  }, [page]);
+
+  const handleDownloadBackup = () => {
+    const envApiBase = import.meta.env.VITE_API_BASE || 'http://localhost:5001/api';
+    window.open(`${envApiBase}/settings/backup/download`, '_blank');
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (config.fields) {
+        // Save key-value config
+        const res = await fetch(`http://localhost:5001/api/settings/${page}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+        if (res.ok) {
+          setSaved(true);
+          setTimeout(() => setSaved(false), 2500);
+        }
+      } else {
+        // Save tabular config
+        const payload = mapColsToItem(page, config.cols.map(c => formValues[c] || ''));
+        const method = editingItem ? 'PUT' : 'POST';
+        const url = editingItem 
+          ? `http://localhost:5001/api/settings/${page}/${editingItem.id}`
+          : `http://localhost:5001/api/settings/${page}`;
+        
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          setSaved(true);
+          setShowForm(false);
+          setEditingItem(null);
+          setFormValues({});
+          fetchData();
+          setTimeout(() => setSaved(false), 2500);
+        }
+      }
+    } catch (e) {
+      console.error('Error saving data:', e);
+      alert('Failed to save data. Please check connection.');
+    }
+  };
+
+  const handleEditClick = (item) => {
+    const rowVals = mapItemToRow(page, item);
+    const initialVals = {};
+    config.cols.forEach((col, idx) => {
+      initialVals[col] = rowVals[idx];
+    });
+    setFormValues(initialVals);
+    setEditingItem(item);
+    setShowForm(true);
+  };
+
+  const handleDeleteClick = async (item) => {
+    if (!window.confirm(`Are you sure you want to delete this item?`)) return;
+    try {
+      const res = await fetch(`http://localhost:5001/api/settings/${page}/${item.id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (e) {
+      console.error('Error deleting data:', e);
+      alert('Failed to delete item.');
+    }
+  };
 
   if (config.backup) return (
-    <div><Topbar title="Backup Database" user={user?.name} /><div className="page-body">
-      <div className="page-header"><div><h2>Backup Database</h2><p>Download database backup</p></div></div>
-      <div className="card" style={{ maxWidth:480 }}>
-        <div style={{ textAlign:'center', padding:'40px 20px' }}>
-          <div style={{ fontSize:48, marginBottom:16 }}>🗄️</div>
-          <h3 style={{ marginBottom:8 }}>Database Backup</h3>
-          <p style={{ color:'var(--text-secondary)', marginBottom:24, fontSize:14 }}>Download a full backup of the HMS database. The backup includes all patient records, billing data, and system configurations.</p>
-          <div style={{ display:'flex', gap:12, justifyContent:'center' }}>
-            <button className="btn btn-primary">Download SQL Backup</button>
-            <button className="btn btn-secondary">Schedule Auto-Backup</button>
+    <div>
+      <Topbar title="Backup Database" user={user?.name} />
+      <div className="page-body">
+        <div className="page-header">
+          <div>
+            <h2>Backup Database</h2>
+            <p>Download database backup</p>
           </div>
-          <div style={{ marginTop:24, fontSize:12, color:'var(--text-muted)' }}>Last backup: 2024-05-10 02:00 AM · Size: 24.5 MB</div>
+        </div>
+        <div className="card" style={{ maxWidth: 480 }}>
+          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🗄️</div>
+            <h3 style={{ marginBottom: 8 }}>Database Backup</h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 24, fontSize: 14 }}>
+              Download a full backup of the HMS database. The backup includes all patient records, billing data, and system configurations.
+            </p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+              <button className="btn btn-primary" onClick={handleDownloadBackup}>Download SQL Backup</button>
+            </div>
+            <div style={{ marginTop: 24, fontSize: 12, color: 'var(--text-muted)' }}>
+              Last backup: Live Generated · Format: SQL Dump (MySQL) / JSON Package (Local Mode)
+            </div>
+          </div>
         </div>
       </div>
-    </div></div>
+    </div>
   );
 
   if (config.fields) return (
-    <div><Topbar title={config.title} user={user?.name} /><div className="page-body">
-      <div className="page-header"><div><h2>{config.title}</h2></div></div>
-      {saved && <div style={{ background:'rgba(16,185,129,0.15)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:8, padding:'12px 16px', marginBottom:16, color:'#34d399' }}>✓ Saved successfully!</div>}
-      <div className="card" style={{ maxWidth:600 }}>
-        <form onSubmit={e => { e.preventDefault(); setSaved(true); setTimeout(()=>setSaved(false),2500); }}>
-          {config.fields.map(([key,label,def]) => (
-            <div key={key} className="form-group">
-              <label className="form-label">{label}</label>
-              <input className="form-control" defaultValue={def} />
-            </div>
-          ))}
-          <button type="submit" className="btn btn-primary"><Save size={14}/> Save Changes</button>
-        </form>
+    <div>
+      <Topbar title={config.title} user={user?.name} />
+      <div className="page-body">
+        <div className="page-header">
+          <div><h2>{config.title}</h2></div>
+        </div>
+        {saved && (
+          <div style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 8, padding: '12px 16px', marginBottom: 16, color: '#34d399' }}>
+            ✓ Saved successfully!
+          </div>
+        )}
+        {loading ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, gap: 10, color: 'var(--text-secondary)' }}>
+            <Loader2 className="animate-spin" size={24} />
+            <span>Fetching configurations...</span>
+          </div>
+        ) : (
+          <div className="card" style={{ maxWidth: 600 }}>
+            <form onSubmit={handleFormSubmit}>
+              {config.fields.map(([key, label]) => (
+                <div key={key} className="form-group">
+                  <label className="form-label">{label}</label>
+                  <input 
+                    className="form-control" 
+                    value={formData[key] || ''} 
+                    onChange={e => setFormData({ ...formData, [key]: e.target.value })} 
+                  />
+                </div>
+              ))}
+              <button type="submit" className="btn btn-primary"><Save size={14} /> Save Changes</button>
+            </form>
+          </div>
+        )}
       </div>
-    </div></div>
+    </div>
   );
 
   return (
-    <div><Topbar title={config.title} user={user?.name} /><div className="page-body">
-      <div className="page-header">
-        <div><h2>{config.title}</h2><p>Manage {config.title.toLowerCase()}</p></div>
-        <div className="page-actions"><button className="btn btn-primary" onClick={() => setShowForm(true)}><Plus size={14}/> Add New</button></div>
-      </div>
-      {saved && <div style={{ background:'rgba(16,185,129,0.15)', border:'1px solid rgba(16,185,129,0.3)', borderRadius:8, padding:'12px 16px', marginBottom:16, color:'#34d399' }}>✓ Saved!</div>}
+    <div>
+      <Topbar title={config.title} user={user?.name} />
+      <div className="page-body">
+        <div className="page-header">
+          <div>
+            <h2>{config.title}</h2>
+            <p>Manage {config.title.toLowerCase()}</p>
+          </div>
+          <div className="page-actions">
+            <button className="btn btn-primary" onClick={() => { setEditingItem(null); setFormValues({}); setShowForm(true); }}>
+              <Plus size={14} /> Add New
+            </button>
+          </div>
+        </div>
+        {saved && (
+          <div style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 8, padding: '12px 16px', marginBottom: 16, color: '#34d399' }}>
+            ✓ Saved!
+          </div>
+        )}
 
-      {showForm && (
-        <div className="card" style={{ marginBottom:20 }}>
-          <div className="section-title" style={{ display:'flex', justifyContent:'space-between' }}><span>Add New {config.title.split(' ')[0]}</span><button className="btn btn-ghost btn-sm" onClick={() => setShowForm(false)}>✕</button></div>
-          <form onSubmit={e => { e.preventDefault(); setSaved(true); setShowForm(false); setTimeout(()=>setSaved(false),2500); }}>
-            <div className="grid-2">
-              {config.cols.map(col => (
-                <div key={col} className="form-group">
-                  <label className="form-label">{col}</label>
-                  {col === 'Status' ? (
-                    <select className="form-control"><option>Active</option><option>Inactive</option></select>
-                  ) : col.includes('Amount') || col.includes('Price') ? (
-                    <input type="number" className="form-control" placeholder="0" />
-                  ) : (
-                    <input className="form-control" placeholder={`Enter ${col.toLowerCase()}`} />
-                  )}
-                </div>
-              ))}
+        {showForm && (
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div className="section-title" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>{editingItem ? 'Edit' : 'Add New'} {config.title.split(' ')[0]}</span>
+              <button className="btn btn-ghost btn-sm" onClick={() => { setShowForm(false); setEditingItem(null); }}>✕</button>
             </div>
-            <button type="submit" className="btn btn-primary"><Save size={14}/> Save</button>
-          </form>
-        </div>
-      )}
+            <form onSubmit={handleFormSubmit}>
+              <div className="grid-2">
+                {config.cols.map(col => (
+                  <div key={col} className="form-group">
+                    <label className="form-label">{col}</label>
+                    {col === 'Status' ? (
+                      <select 
+                        className="form-control" 
+                        value={formValues[col] || 'Active'} 
+                        onChange={e => setFormValues({ ...formValues, [col]: e.target.value })}
+                      >
+                        <option>Active</option>
+                        <option>Inactive</option>
+                        {page === 'acknowledge-receipt' && <option>Acknowledged</option>}
+                        {page === 'acknowledge-receipt' && <option>Pending</option>}
+                      </select>
+                    ) : col.includes('Amount') || col.includes('Price') ? (
+                      <input 
+                        type="number" 
+                        className="form-control" 
+                        placeholder="0" 
+                        value={formValues[col] || ''} 
+                        onChange={e => setFormValues({ ...formValues, [col]: e.target.value })}
+                        required
+                      />
+                    ) : (
+                      <input 
+                        className="form-control" 
+                        placeholder={`Enter ${col.toLowerCase()}`} 
+                        value={formValues[col] || ''} 
+                        onChange={e => setFormValues({ ...formValues, [col]: e.target.value })}
+                        required
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+              <button type="submit" className="btn btn-primary"><Save size={14} /> Save</button>
+            </form>
+          </div>
+        )}
 
-      <div className="card">
-        <div className="table-wrapper">
-          <table>
-            <thead><tr><th>#</th>{config.cols.map(c => <th key={c}>{c}</th>)}<th>Actions</th></tr></thead>
-            <tbody>{rows.map((row, i) => (
-              <tr key={i}><td style={{ color:'var(--text-muted)', fontSize:12 }}>{i+1}</td>
-                {row.map((cell, j) => <td key={j}>{
-                  typeof cell === 'string' && (cell === 'Active' || cell === 'Acknowledged') ? <span className="badge badge-success">{cell}</span> :
-                  typeof cell === 'string' && (cell === 'Inactive' || cell === 'Pending') ? <span className="badge badge-warning">{cell}</span> :
-                  typeof cell === 'number' ? `₹${cell.toLocaleString()}` : cell
-                }</td>)}
-                <td style={{ display:'flex', gap:6 }}>
-                  <button className="btn btn-ghost btn-sm"><Edit2 size={13}/></button>
-                  <button className="btn btn-ghost btn-sm" style={{ color:'var(--danger)' }}><Trash2 size={13}/></button>
-                </td>
-              </tr>
-            ))}</tbody>
-          </table>
+        <div className="card">
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  {config.cols.map(c => <th key={c}>{c}</th>)}
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={config.cols.length + 2} style={{ textAlign: 'center', padding: 40 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--text-secondary)' }}>
+                        <Loader2 className="animate-spin" size={20} />
+                        <span>Loading records from database...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  rawItems.map((item, i) => {
+                    const row = mapItemToRow(page, item);
+                    return (
+                      <tr key={item.id || i}>
+                        <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{i + 1}</td>
+                        {row.map((cell, j) => (
+                          <td key={j}>
+                            {typeof cell === 'string' && (cell === 'Active' || cell === 'Acknowledged') ? (
+                              <span className="badge badge-success">{cell}</span>
+                            ) : typeof cell === 'string' && (cell === 'Inactive' || cell === 'Pending') ? (
+                              <span className="badge badge-warning">{cell}</span>
+                            ) : typeof cell === 'number' ? (
+                              `₹${cell.toLocaleString()}`
+                            ) : (
+                              cell
+                            )}
+                          </td>
+                        ))}
+                        <td>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button className="btn btn-ghost btn-sm" onClick={() => handleEditClick(item)}>
+                              <Edit2 size={13} />
+                            </button>
+                            <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleDeleteClick(item)}>
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+                {!loading && rawItems.length === 0 && (
+                  <tr>
+                    <td colSpan={config.cols.length + 2} className="empty-state">
+                      No records found. Click "Add New" to insert a record.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-    </div></div>
+    </div>
   );
 }

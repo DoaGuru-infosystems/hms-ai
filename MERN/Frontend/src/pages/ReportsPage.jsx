@@ -125,7 +125,7 @@ export default function ReportsPage({ user }) {
 
   const patientBills = useMemo(() => {
     if (!selectedPatient) return [];
-    return bills.filter(b => b.patientName.toLowerCase().includes((selectedPatient.firstName || '').toLowerCase()));
+    return bills.filter(b => b.patientNo === selectedPatient.patientNo);
   }, [selectedPatient, bills]);
 
   // 3. OPD Report
@@ -169,8 +169,8 @@ export default function ReportsPage({ user }) {
     const doctors = users.filter(u => u.role === 'Doctor');
     return doctors.map(doc => {
       const docName = `${doc.firstName} ${doc.lastName}`;
-      const docOPD = opdRecords.filter(r => r.doctor.includes(doc.lastName)).length;
-      const docIPD = ipdRecords.filter(r => r.doctor.includes(doc.lastName)).length;
+      const docOPD = opdRecords.filter(r => r.doctor && r.doctor.includes(doc.lastName)).length;
+      const docIPD = ipdRecords.filter(r => r.doctor && r.doctor.includes(doc.lastName)).length;
       const rev = (docOPD * 350) + (docIPD * 1500);
       return {
         id: doc.id,

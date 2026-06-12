@@ -2,6 +2,43 @@ import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './index.css';
 
+// Global fetch interceptor to inject Authorization token, role headers, and replace hardcoded base URLs
+const originalFetch = window.fetch;
+window.fetch = async function (url, options = {}) {
+  let targetUrl = url;
+  if (typeof url === 'string') {
+    const envApiBase = import.meta.env.VITE_API_BASE || 'http://localhost:5001/api';
+    if (url.startsWith('http://localhost:5001/api')) {
+      targetUrl = url.replace('http://localhost:5001/api', envApiBase);
+    }
+  }
+
+  let user = null;
+  try {
+    user = JSON.parse(localStorage.getItem('user') || '{}');
+  } catch (e) {
+    user = {};
+  }
+
+  const headers = { ...(options.headers || {}) };
+
+  if (user && user.token) {
+    headers['Authorization'] = `Bearer ${user.token}`;
+  }
+  if (user && user.role) {
+    headers['x-user-role'] = user.role;
+  }
+  if (user && (user.id || user.empNo)) {
+    headers['x-user-id'] = user.id || user.empNo;
+  }
+  if (user && (user.name || user.firstName)) {
+    headers['x-user-name'] = user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim();
+  }
+
+  options.headers = headers;
+  return originalFetch(targetUrl, options);
+};
+
 import LoginPage from './pages/LoginPage';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';

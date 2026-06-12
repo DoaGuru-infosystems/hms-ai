@@ -10,28 +10,22 @@ function StatCard({ icon: Icon, label, value, sub, color, change }) {
   return (
     <div className="stat-card">
       <div className="stat-icon" style={{
-        background: `linear-gradient(135deg, ${color}18, ${color}08)`,
-        border: `1px solid ${color}22`
+        background: `${color}12`,
+        border: `1px solid ${color}20`
       }}>
-        <Icon size={20} color={color} />
+        <Icon size={19} color={color} />
       </div>
       <div className="stat-info">
-        <h3 style={{ color: 'var(--text)' }}>{value}</h3>
+        <h3 style={{ color: color || 'var(--text)' }}>{value}</h3>
         <p>{label}</p>
         {change && (
-          <div className="stat-change" style={{ color: '#059669', background: 'rgba(16, 185, 129, 0.06)' }}>
+          <div className="stat-change" style={{ color: '#0ca678', background: 'rgba(18,184,134,0.08)' }}>
             <TrendingUp size={10} />
             <span>{change}</span>
           </div>
         )}
-        {sub && <div style={{ fontSize: '10.5px', color: 'var(--text-light)', marginTop: '2px', fontWeight: 500 }}>{sub}</div>}
+        {sub && <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 3, fontWeight: 500 }}>{sub}</div>}
       </div>
-      {/* decorative circle */}
-      <div style={{
-        position: 'absolute', top: -20, right: -20,
-        width: 80, height: 80, borderRadius: '50%',
-        background: `${color}04`, pointerEvents: 'none'
-      }} />
     </div>
   );
 }
@@ -166,10 +160,10 @@ export default function Dashboard({ user }) {
 
         {/* Stat Cards */}
         <div className="grid-stat" style={{ marginBottom: 16 }}>
-          <StatCard icon={Users}       label="Today's OPD"        value={s.todayOPD}                          color="#4f46e5" change="+12% yesterday" />
-          <StatCard icon={Bed}         label="In-Patients"         value={s.totalIPD}                          color="#0d9488" sub={`${s.availableBeds}/${s.totalBeds} beds vacant`} />
-          <StatCard icon={Receipt}     label="Monthly Revenue"     value={`₹${s.monthlyRevenue.toLocaleString()}`} color="#10b981" change="Live sum" />
-          <StatCard icon={AlertCircle} label="Pending Bills"       value={s.pendingBills}                      color="#f59e0b" sub="Requires collection" />
+          <StatCard icon={Users}       label="Today's OPD"       value={s.todayOPD}                           color="#3b5bdb" change="+12% yesterday" />
+          <StatCard icon={Bed}         label="In-Patients"        value={s.totalIPD}                           color="#0d9488" sub={`${s.availableBeds}/${s.totalBeds} beds vacant`} />
+          <StatCard icon={Receipt}     label="Monthly Revenue"    value={`₹${s.monthlyRevenue.toLocaleString()}`} color="#12b886" change="Live sum" />
+          <StatCard icon={AlertCircle} label="Pending Bills"      value={s.pendingBills}                       color="#fd7e14" sub="Requires collection" />
         </div>
 
         {/* Charts Row */}

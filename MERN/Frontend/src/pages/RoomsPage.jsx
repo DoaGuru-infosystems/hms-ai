@@ -11,9 +11,105 @@ export default function RoomsPage({ user }) {
   const [filterCategory, setFilterCategory] = useState('All');
   const [filterStatus, setFilterStatus] = useState('All');
   const [roomsList, setRoomsList] = useState([]);
+  const [ipdList, setIpdList] = useState([]);
+
+  // Modal and Form States
+  const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedRoomId, setSelectedRoomId] = useState(null);
+  const [roomForm, setRoomForm] = useState({
+    roomNo: '',
+    roomType: 'General Ward',
+    totalBeds: 4,
+    pricePerDay: 1200
+  });
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  const resetForm = () => {
+    setRoomForm({
+      roomNo: '',
+      roomType: 'General Ward',
+      totalBeds: 4,
+      pricePerDay: 1200
+    });
+    setErrorMsg('');
+    setSuccessMsg('');
+    setSelectedRoomId(null);
+  };
+
+  const handleEditRoom = (room) => {
+    setRoomForm({
+      roomNo: room.name || room.roomNo,
+      roomType: room.category || room.roomType,
+      totalBeds: room.totalBeds,
+      pricePerDay: room.rate || room.pricePerDay
+    });
+    setSelectedRoomId(room.id);
+    setIsEditing(true);
+    setShowModal(true);
+  };
+
+  const handleDeleteRoom = (roomId) => {
+    if (window.confirm('Are you sure you want to delete this room?')) {
+      fetch(`http://localhost:5001/api/rooms/${roomId}`, {
+        method: 'DELETE'
+      })
+      .then(res => res.json())
+      .then(() => {
+        fetchRooms();
+      })
+      .catch(err => {
+        console.error('Failed to delete room:', err);
+      });
+    }
+  };
+
+  const handleSaveRoom = (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    if (!roomForm.roomNo || !roomForm.roomType) {
+      setErrorMsg('Room number and category are required.');
+      return;
+    }
+
+    const url = isEditing 
+      ? `http://localhost:5001/api/rooms/${selectedRoomId}`
+      : 'http://localhost:5001/api/rooms';
+    const method = isEditing ? 'PUT' : 'POST';
+
+    fetch(url, {
+      method: method,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(roomForm)
+    })
+    .then(async res => {
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to save room');
+      }
+      return data;
+    })
+    .then(() => {
+      setSuccessMsg(isEditing ? 'Room updated successfully!' : 'Room added successfully!');
+      fetchRooms();
+      setTimeout(() => {
+        resetForm();
+        setShowModal(false);
+      }, 1000);
+    })
+    .catch(err => {
+      setErrorMsg(err.message || 'Something went wrong.');
+    });
+  };
 
   useEffect(() => {
     fetchRooms();
+    fetchIpd();
   }, []);
 
   const fetchRooms = () => {
@@ -32,30 +128,86 @@ export default function RoomsPage({ user }) {
       });
   };
 
+  const fetchIpd = () => {
+    fetch('http://localhost:5001/api/ipd')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setIpdList(data.filter(p => p.status === 'Admitted'));
+        } else {
+          setIpdList([]);
+        }
+      })
+      .catch(err => {
+        console.log('Failed to fetch IPD admissions list.', err);
+        setIpdList([]);
+      });
+  };
+
+  const roomsListCalculated = useMemo(() => {
+    return roomsList.map(r => {
+      const occupiedCount = ipdList.filter(p => {
+        if (!p.room || !r.name) return false;
+        const pRoomStr = p.room.toString().toLowerCase().replace('room', '').trim();
+        const sRoomStr = r.name.toString().toLowerCase().replace('room', '').trim();
+        return pRoomStr === sRoomStr;
+      }).length;
+      return {
+        ...r,
+        vacantBeds: Math.max(0, r.totalBeds - occupiedCount)
+      };
+    });
+  }, [roomsList, ipdList]);
+
   const bedsList = useMemo(() => {
     const beds = [];
-    roomsList.forEach(r => {
+    roomsListCalculated.forEach(r => {
       const rate = r.rate;
       for (let i = 1; i <= r.totalBeds; i++) {
-        const isOccupied = i > r.vacantBeds;
+        const bedNo = `RM-${r.name}-${i.toString().padStart(2, '0')}`;
+        
+        const occupyingPatient = ipdList.find(p => {
+          if (!p.room || !r.name) return false;
+          const pRoomStr = p.room.toString().toLowerCase().replace('room', '').trim();
+          const sRoomStr = r.name.toString().toLowerCase().replace('room', '').trim();
+          if (pRoomStr !== sRoomStr) return false;
+
+          // Bed check
+          if (p.bed === bedNo) return true;
+          const altBedName = `Bed ${r.name}-${i}`;
+          if (p.bed === altBedName) return true;
+          
+          let bedIndex = null;
+          if (p.bed) {
+            const matchIndex = p.bed.match(/-0*(\d+)$/) || p.bed.match(/Bed\s+0*(\d+)$/i) || p.bed.match(/^0*(\d+)$/);
+            if (matchIndex) {
+              bedIndex = parseInt(matchIndex[1], 10);
+            }
+          }
+          return bedIndex === i;
+        });
+
         beds.push({
           id: `${r.name}-Bed-${i}`,
-          bedNo: `Bed ${r.name}-${i}`,
+          bedNo: `RM-${r.name}-${i.toString().padStart(2, '0')}`,
+          bedLabel: `Bed ${r.name}-${i}`,
           roomName: r.name,
           category: r.category,
           floor: r.floor,
           rate: rate,
-          status: isOccupied ? 'Occupied' : 'Vacant'
+          status: occupyingPatient ? 'Occupied' : 'Vacant',
+          patientName: occupyingPatient ? occupyingPatient.patientName : null,
+          patientId: occupyingPatient ? occupyingPatient.patientNo : null
         });
       }
     });
     return beds;
-  }, [roomsList]);
+  }, [roomsListCalculated, ipdList]);
 
   // Room Categories summary
   const categoriesList = useMemo(() => {
     const categoriesMap = {};
-    roomsList.forEach(r => {
+    roomsListCalculated.forEach(r => {
       if (!categoriesMap[r.category]) {
         categoriesMap[r.category] = {
           name: r.category,
@@ -70,21 +222,21 @@ export default function RoomsPage({ user }) {
       categoriesMap[r.category].roomsCount += 1;
     });
     return Object.values(categoriesMap);
-  }, [roomsList]);
+  }, [roomsListCalculated]);
 
   // Filters for Room Master
   const filteredRooms = useMemo(() => {
-    return roomsList.filter(r => {
+    return roomsListCalculated.filter(r => {
       const matchSearch = `Room ${r.name} ${r.category} Floor ${r.floor}`.toLowerCase().includes(search.toLowerCase());
       const matchCat = filterCategory === 'All' || r.category === filterCategory;
       return matchSearch && matchCat;
     });
-  }, [roomsList, search, filterCategory]);
+  }, [roomsListCalculated, search, filterCategory]);
 
   // Filters for Beds Master
   const filteredBeds = useMemo(() => {
     return bedsList.filter(b => {
-      const matchSearch = `${b.bedNo} ${b.roomName} ${b.category}`.toLowerCase().includes(search.toLowerCase());
+      const matchSearch = `${b.bedLabel} ${b.bedNo} ${b.roomName} ${b.category}`.toLowerCase().includes(search.toLowerCase());
       const matchCat = filterCategory === 'All' || b.category === filterCategory;
       const matchStatus = filterStatus === 'All' || b.status === filterStatus;
       return matchSearch && matchCat && matchStatus;
@@ -110,7 +262,7 @@ export default function RoomsPage({ user }) {
                   <Bed className="text-accent" size={20} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 24, fontWeight: 800 }}>{roomsList.reduce((s, r) => s + r.totalBeds, 0)}</div>
+                  <div style={{ fontSize: 24, fontWeight: 800 }}>{roomsListCalculated.reduce((s, r) => s + r.totalBeds, 0)}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Total Hospital Beds</div>
                 </div>
               </div>
@@ -119,7 +271,7 @@ export default function RoomsPage({ user }) {
                   <CheckCircle2 style={{ color: 'var(--success)' }} size={20} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--success)' }}>{roomsList.reduce((s, r) => s + r.vacantBeds, 0)}</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--success)' }}>{roomsListCalculated.reduce((s, r) => s + r.vacantBeds, 0)}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Currently Vacant Beds</div>
                 </div>
               </div>
@@ -129,7 +281,7 @@ export default function RoomsPage({ user }) {
                 </div>
                 <div>
                   <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--warning)' }}>
-                    {roomsList.reduce((s, r) => s + (r.totalBeds - r.vacantBeds), 0)}
+                    {roomsListCalculated.reduce((s, r) => s + (r.totalBeds - r.vacantBeds), 0)}
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Occupied Beds</div>
                 </div>
@@ -180,13 +332,18 @@ export default function RoomsPage({ user }) {
                     borderColor: b.status === 'Vacant' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.15)'
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 700, fontSize: 14 }}>{b.bedNo}</span>
+                      <span style={{ fontWeight: 700, fontSize: 14 }}>{b.bedLabel}</span>
                       <span className={`badge ${b.status === 'Vacant' ? 'badge-success' : 'badge-danger'}`} style={{ fontSize: 10 }}>
                         {b.status}
                       </span>
                     </div>
-                    <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', marginTop: 8 }}>
-                      Floor {b.floor} · Room {b.roomName}
+                    {b.status === 'Occupied' && b.patientName && (
+                      <div style={{ margin: '8px 0 2px 0', padding: '4px 6px', background: 'rgba(239,68,68,0.06)', border: '1px dashed rgba(239,68,68,0.2)', borderRadius: 4, fontSize: 11, color: 'var(--danger)', fontWeight: 600 }}>
+                        👤 {b.patientName}
+                      </div>
+                    )}
+                    <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', marginTop: b.status === 'Occupied' ? 4 : 8 }}>
+                      Floor {b.floor} · Room {b.roomName} · <span style={{ fontFamily: 'monospace' }}>{b.bedNo}</span>
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
                       {b.category}
@@ -286,7 +443,10 @@ export default function RoomsPage({ user }) {
                   <tbody>
                     {filteredBeds.map(b => (
                       <tr key={b.id}>
-                        <td><span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--accent-light)' }}>{b.bedNo}</span></td>
+                        <td>
+                          <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--accent-light)' }}>{b.bedNo}</span>
+                          <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{b.bedLabel}</div>
+                        </td>
                         <td style={{ fontWeight: 600 }}>Room {b.roomName}</td>
                         <td>{b.category}</td>
                         <td>Floor {b.floor}</td>
@@ -295,6 +455,11 @@ export default function RoomsPage({ user }) {
                           <span className={`badge ${b.status === 'Vacant' ? 'badge-success' : 'badge-danger'}`}>
                             {b.status}
                           </span>
+                          {b.status === 'Occupied' && b.patientName && (
+                            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--danger)', marginTop: 4 }}>
+                              👤 {b.patientName} ({b.patientId})
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -314,21 +479,21 @@ export default function RoomsPage({ user }) {
                 <h2>Room Master Register</h2>
                 <p>Register of all physical rooms, clinical theatres and special ICU suites</p>
               </div>
-              <button className="btn btn-primary"><Plus size={15} /> Add Room</button>
+              <button className="btn btn-primary" onClick={() => { setIsEditing(false); resetForm(); setShowModal(true); }}><Plus size={15} /> Add Room</button>
             </div>
 
             {/* Quick Stats */}
             <div className="grid-3" style={{ marginBottom: 24 }}>
               <div className="card" style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 32, fontWeight: 800, color: '#6366f1' }}>{roomsList.reduce((s, r) => s + r.totalBeds, 0)}</div>
+                <div style={{ fontSize: 32, fontWeight: 800, color: '#6366f1' }}>{roomsListCalculated.reduce((s, r) => s + r.totalBeds, 0)}</div>
                 <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>Total Beds</div>
               </div>
               <div className="card" style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 32, fontWeight: 800, color: '#10b981' }}>{roomsList.reduce((s, r) => s + r.vacantBeds, 0)}</div>
+                <div style={{ fontSize: 32, fontWeight: 800, color: '#10b981' }}>{roomsListCalculated.reduce((s, r) => s + r.vacantBeds, 0)}</div>
                 <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>Vacant Beds</div>
               </div>
               <div className="card" style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 32, fontWeight: 800, color: '#f59e0b' }}>{roomsList.reduce((s, r) => s + (r.totalBeds - r.vacantBeds), 0)}</div>
+                <div style={{ fontSize: 32, fontWeight: 800, color: '#f59e0b' }}>{roomsListCalculated.reduce((s, r) => s + (r.totalBeds - r.vacantBeds), 0)}</div>
                 <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>Occupied Beds</div>
               </div>
             </div>
@@ -376,7 +541,13 @@ export default function RoomsPage({ user }) {
                     <div style={{ height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden' }}>
                       <div style={{ height: '100%', width: `${pct}%`, background: pct > 80 ? 'var(--danger)' : pct > 50 ? 'var(--warning)' : 'var(--success)', borderRadius: 3, transition: 'width 0.3s' }} />
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6, textRight: 'right' }}>{pct}% occupied</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{pct}% occupied</span>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button className="btn btn-ghost btn-xs" style={{ fontSize: 10, padding: '2px 6px', height: 'auto', minHeight: 0 }} onClick={() => handleEditRoom(r)}>Edit</button>
+                        <button className="btn btn-ghost btn-xs text-danger" style={{ fontSize: 10, padding: '2px 6px', height: 'auto', minHeight: 0 }} onClick={() => handleDeleteRoom(r.id)}>Delete</button>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -392,6 +563,50 @@ export default function RoomsPage({ user }) {
       <div className="page-body">
         {renderContent()}
       </div>
+
+      {showModal && (
+        <div className="modal-overlay" onClick={() => { resetForm(); setShowModal(false); }}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>{isEditing ? 'Edit Room' : 'Add New Room'}</h3>
+              <button className="btn btn-ghost btn-sm" onClick={() => { resetForm(); setShowModal(false); }}>✕</button>
+            </div>
+            <form onSubmit={handleSaveRoom}>
+              <div className="modal-body">
+                {errorMsg && <div style={{ color: 'var(--danger)', fontSize: 13, marginBottom: 12, fontWeight: 500 }}>{errorMsg}</div>}
+                {successMsg && <div style={{ color: 'var(--success)', fontSize: 13, marginBottom: 12, fontWeight: 500 }}>{successMsg}</div>}
+
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Room Number / Name</label>
+                    <input className="form-control" placeholder="e.g. 101, ICU-A" value={roomForm.roomNo} onChange={e => setRoomForm({ ...roomForm, roomNo: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Category</label>
+                    <select className="form-control" value={roomForm.roomType} onChange={e => setRoomForm({ ...roomForm, roomType: e.target.value })}>
+                      <option value="General Ward">General Ward</option>
+                      <option value="Executive Deluxe">Executive Deluxe</option>
+                      <option value="ICU">ICU</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Total Beds</label>
+                    <input className="form-control" type="number" min="1" value={roomForm.totalBeds} onChange={e => setRoomForm({ ...roomForm, totalBeds: parseInt(e.target.value) || 0 })} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Price Per Day (₹)</label>
+                    <input className="form-control" type="number" min="0" step="any" value={roomForm.pricePerDay} onChange={e => setRoomForm({ ...roomForm, pricePerDay: parseFloat(e.target.value) || 0 })} required />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => { resetForm(); setShowModal(false); }}>Close</button>
+                <button type="submit" className="btn btn-primary">{isEditing ? 'Save Changes' : 'Save Room'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

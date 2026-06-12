@@ -15,6 +15,7 @@ const nurseRoutes = require('./nurseRoutes');
 const doctorRoutes = require('./doctorRoutes');
 const departmentRoutes = require('./departmentRoutes');
 const ambulanceRoutes = require('./ambulanceRoutes');
+const settingsRoutes = require('./settingsRoutes');
 
 // Request Logging Middleware
 const loggingMiddleware = require('../middlewares/loggingMiddleware');
@@ -35,5 +36,6 @@ router.use('/nurse', nurseRoutes);
 router.use('/doctors', doctorRoutes);
 router.use('/departments', departmentRoutes);
 router.use('/ambulance', ambulanceRoutes);
+router.use('/settings', settingsRoutes);
 
 module.exports = router;

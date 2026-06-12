@@ -150,7 +150,7 @@ const connectDB = async () => {
           \`designation\` int(11) NOT NULL,
           \`user_role\` int(11) NOT NULL,
           \`cType\` varchar(25) NOT NULL DEFAULT '',
-          \`title\` int(11) NOT NULL,
+          \`title\` int(11) NOT NULL DEFAULT 0,
           \`lastname\` varchar(50) NOT NULL,
           \`firstname\` varchar(50) NOT NULL,
           \`middlename\` varchar(25) NOT NULL DEFAULT '',
@@ -172,6 +172,7 @@ const connectDB = async () => {
           \`doctorLastIn\` varchar(25) NOT NULL DEFAULT '',
           \`doctorLastOut\` varchar(25) NOT NULL DEFAULT '',
           \`InActive\` int(1) NOT NULL DEFAULT 0,
+          \`date_entry\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
           PRIMARY KEY (\`id\`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
       `);
@@ -455,6 +456,36 @@ const connectDB = async () => {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
       `);
 
+      // Create patient_labs table
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS \`patient_labs\` (
+          \`id\` bigint(20) NOT NULL AUTO_INCREMENT,
+          \`patient_no\` varchar(50) NOT NULL,
+          \`test_name\` varchar(100) NOT NULL,
+          \`test_value\` varchar(100) NOT NULL DEFAULT 'Pending',
+          \`status\` varchar(20) NOT NULL DEFAULT 'Pending',
+          \`requested_by\` varchar(100) DEFAULT '',
+          \`date_entry\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (\`id\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+
+      // Create patient_operations table
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS \`patient_operations\` (
+          \`id\` bigint(20) NOT NULL AUTO_INCREMENT,
+          \`patient_no\` varchar(50) NOT NULL,
+          \`procedure_name\` varchar(100) NOT NULL,
+          \`op_date\` date DEFAULT NULL,
+          \`op_time\` varchar(20) DEFAULT '',
+          \`anesthesiologist\` varchar(100) DEFAULT '',
+          \`surgeon_notes\` text DEFAULT NULL,
+          \`status\` varchar(20) NOT NULL DEFAULT 'Scheduled',
+          \`date_entry\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (\`id\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+
       // ── AMBULANCE FLEET (Phase 1 upgraded schema) ──────────────────────
       await connection.query(`
         CREATE TABLE IF NOT EXISTS \`ambulance_fleet\` (
@@ -566,6 +597,15 @@ const connectDB = async () => {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
       `);
 
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS \`system_settings\` (
+          \`settings_type\` varchar(100) NOT NULL,
+          \`settings_data\` json         NOT NULL,
+          \`date_entry\`    datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (\`settings_type\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+
 
       // 4. Seed tables if they are empty
       const [depts] = await connection.query('SELECT COUNT(*) as count FROM department');
@@ -656,6 +696,10 @@ const connectDB = async () => {
 
       // ── PHASE 1 MIGRATIONS: add new columns to existing tables if missing ──
       const safeAlter = async (sql) => { try { await connection.query(sql); } catch(e) { /* Column already exists — skip */ } };
+
+      // users migrations
+      await safeAlter(`ALTER TABLE users ADD COLUMN date_entry datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER InActive`);
+      await safeAlter(`ALTER TABLE users MODIFY COLUMN title int(11) NOT NULL DEFAULT 0`);
 
       // ambulance_fleet migrations
       await safeAlter(`ALTER TABLE ambulance_fleet ADD COLUMN registration_no   varchar(50)  DEFAULT ''        AFTER plate`);

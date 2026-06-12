@@ -31,13 +31,13 @@ export default function LoginPage({ onLogin }) {
       const u = form.username.toLowerCase();
       const p = form.password;
       if (u === 'admin' && (p === 'admin123' || p === 'password')) {
-        onLogin({ name: 'System Administrator', role: 'Administrator' });
-      } else if (u === 'doctor' && (p === 'doctor123' || p === 'password')) {
-        onLogin({ name: 'Dr. Rajesh Kumar', role: 'Doctor' });
-      } else if (u === 'nurse' && (p === 'nurse123' || p === 'password')) {
-        onLogin({ name: "Sr. Mary D'Souza", role: 'Nurse' });
-      } else if (u === 'receptionist' && (p === 'recep123' || p === 'password')) {
-        onLogin({ name: 'Suman Sharma', role: 'Receptionist' });
+        onLogin({ id: '00001', empNo: 'EMP-001', name: 'System Administrator', role: 'Administrator', token: 'mock-jwt-token' });
+      } else if ((u === 'doctor' || u === 'doctor1') && (p === 'doctor123' || p === 'password')) {
+        onLogin({ id: '00007', empNo: 'EMP-007', name: 'Dr. Rajesh Kumar', role: 'Doctor', token: 'mock-jwt-token' });
+      } else if ((u === 'nurse' || u === 'nurse1') && (p === 'nurse123' || p === 'password')) {
+        onLogin({ id: '00009', empNo: 'EMP-009', name: "Sr. Mary D'Souza", role: 'Nurse', token: 'mock-jwt-token' });
+      } else if ((u === 'receptionist' || u === 'receptionist1') && (p === 'recep123' || p === 'password')) {
+        onLogin({ id: '00010', empNo: 'EMP-010', name: 'Suman Sharma', role: 'Receptionist', token: 'mock-jwt-token' });
       } else {
         setError(err.message || 'Invalid username or password.');
       }
@@ -52,8 +52,8 @@ export default function LoginPage({ onLogin }) {
       <div style={{
         display: 'none',
         width: '45%',
-        background: 'linear-gradient(135deg, #4f46e5, #7c3aed, #0d9488)',
-        borderRadius: 24,
+        background: 'var(--gradient-primary)',
+        borderRadius: 20,
         padding: 48,
         flexDirection: 'column',
         justifyContent: 'center',
@@ -71,10 +71,10 @@ export default function LoginPage({ onLogin }) {
         {/* Logo */}
         <div className="login-logo">
           <div style={{
-            width: 70, height: 70, borderRadius: 20, margin: '0 auto 12px',
-            background: 'linear-gradient(135deg, #4f46e5, #8b5cf6)',
+            width: 64, height: 64, borderRadius: 18, margin: '0 auto 14px',
+            background: 'var(--gradient-primary)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 32, boxShadow: '0 8px 32px rgba(79,70,229,0.25)'
+            fontSize: 28, boxShadow: '0 8px 24px var(--primary-glow)'
           }}>
             🏥
           </div>
@@ -84,17 +84,17 @@ export default function LoginPage({ onLogin }) {
 
         {/* Divider */}
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24
+          display: 'flex', alignItems: 'center', gap: 12, marginBottom: 22
         }}>
-          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          <div style={{ flex: 1, height: 1, background: 'var(--surface-border)' }} />
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 6, fontSize: 11,
+            display: 'flex', alignItems: 'center', gap: 6, fontSize: 10,
             fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1
           }}>
-            <ShieldCheck size={12} />
+            <ShieldCheck size={11} />
             Secure Login
           </div>
-          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          <div style={{ flex: 1, height: 1, background: 'var(--surface-border)' }} />
         </div>
 
         {/* Form */}
@@ -143,9 +143,9 @@ export default function LoginPage({ onLogin }) {
 
           {error && (
             <div style={{
-              background: 'var(--rose-soft)', border: '1px solid rgba(244,63,94,0.2)',
+              background: 'var(--danger-soft)', border: '1px solid rgba(250,82,82,0.18)',
               borderRadius: 8, padding: '10px 14px', fontSize: 13,
-              color: '#be123c', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8
+              color: '#e03131', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8
             }}>
               ⚠️ {error}
             </div>
@@ -163,23 +163,23 @@ export default function LoginPage({ onLogin }) {
 
         {/* Demo credentials */}
         <div style={{
-          marginTop: 20, padding: '14px 16px',
-          background: 'var(--primary-soft)',
-          borderRadius: 10, border: '1px solid var(--border)'
+          marginTop: 18, padding: '12px 14px',
+          background: 'var(--bg)',
+          borderRadius: 10, border: '1px solid var(--surface-border)'
         }}>
-          <p style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+          <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.8 }}>
             Demo Accounts
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
             {[
-              { role: 'Admin', cred: 'admin / admin123' },
-              { role: 'Doctor', cred: 'doctor / doctor123' },
-              { role: 'Nurse', cred: 'nurse / nurse123' },
-              { role: 'Reception', cred: 'receptionist / recep123' },
+              { role: 'Admin', cred: 'admin / password' },
+              { role: 'Doctor', cred: 'doctor1 / password' },
+              { role: 'Nurse', cred: 'nurse1 / password' },
+              { role: 'Receptionist', cred: 'receptionist1 / password' },
             ].map(d => (
               <div key={d.role} style={{
                 padding: '6px 10px', borderRadius: 7,
-                background: 'var(--surface)', border: '1px solid var(--border)'
+                background: 'var(--surface)', border: '1px solid var(--surface-border)'
               }}>
                 <p style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>{d.role}</p>
                 <p style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 700, marginTop: 1 }}>{d.cred}</p>

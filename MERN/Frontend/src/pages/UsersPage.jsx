@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, Plus, Edit2, Trash2, Shield, UserPlus, Key, ClipboardList, Check, Loader2 } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Shield, UserPlus, Key, ClipboardList, Check, Loader2, X } from 'lucide-react';
 import Topbar from '../components/Topbar';
 
 const ROLE_BADGE = { 
@@ -40,6 +40,20 @@ export default function UsersPage({ user }) {
   const [designation, setDesignation] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
+  // Edit form states
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [editFirstName, setEditFirstName] = useState('');
+  const [editLastName, setEditLastName] = useState('');
+  const [editRole, setEditRole] = useState('Doctor');
+  const [editDept, setEditDept] = useState('');
+  const [editDesignation, setEditDesignation] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editPassword, setEditPassword] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -89,8 +103,8 @@ export default function UsersPage({ user }) {
       designation,
       email,
       phone,
-      username: firstName.toLowerCase() + String(Math.floor(10 + Math.random() * 90)),
-      password: 'password'
+      username,
+      password
     };
 
     fetch('http://localhost:5001/api/users', {
@@ -100,6 +114,9 @@ export default function UsersPage({ user }) {
     })
       .then(res => res.json())
       .then(data => {
+        if (data.error) {
+          throw new Error(data.error);
+        }
         setSuccessMsg('✓ Employee ' + firstName + ' ' + lastName + ' successfully registered with ID ' + (data.empNo || empNo));
         fetchData();
         // Reset Form
@@ -108,11 +125,74 @@ export default function UsersPage({ user }) {
         setDesignation('');
         setEmail('');
         setPhone('');
+        setUsername('');
+        setPassword('');
         setTimeout(() => setSuccessMsg(''), 4000);
       })
       .catch(err => {
         alert('Failed to register employee: ' + err.message);
       });
+  };
+
+  const handleEditClick = (u) => {
+    setEditingUserId(u.empNo || u.id);
+    setEditFirstName(u.firstName || '');
+    setEditLastName(u.lastName || '');
+    setEditRole(u.role || 'Doctor');
+    setEditDept(u.department || (deptsList[0]?.name || 'General Medicine'));
+    setEditDesignation(u.designation || '');
+    setEditEmail(u.email || '');
+    setEditPhone(u.phone || '');
+    setEditPassword('');
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = (e) => {
+    e.preventDefault();
+    const payload = {
+      firstName: editFirstName,
+      lastName: editLastName,
+      role: editRole,
+      department: editDept,
+      designation: editDesignation,
+      email: editEmail,
+      phone: editPhone
+    };
+    if (editPassword) {
+      payload.password = editPassword;
+    }
+    fetch(`http://localhost:5001/api/users/${editingUserId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(() => {
+        setSuccessMsg('✓ Employee updated successfully.');
+        fetchData();
+        setShowEditModal(false);
+        setTimeout(() => setSuccessMsg(''), 4000);
+      })
+      .catch(err => {
+        alert('Failed to update employee: ' + err.message);
+      });
+  };
+
+  const handleDeleteClick = (userId) => {
+    if (window.confirm('Are you sure you want to delete this employee?')) {
+      fetch(`http://localhost:5001/api/users/${userId}`, {
+        method: 'DELETE'
+      })
+        .then(res => res.json())
+        .then(() => {
+          setSuccessMsg('✓ Employee deleted successfully.');
+          fetchData();
+          setTimeout(() => setSuccessMsg(''), 4000);
+        })
+        .catch(err => {
+          alert('Failed to delete employee: ' + err.message);
+        });
+    }
   };
 
   const renderContent = () => {
@@ -179,10 +259,18 @@ export default function UsersPage({ user }) {
                     <label className="form-label">Phone Number</label>
                     <input className="form-control" placeholder="Enter phone number" value={phone} onChange={e => setPhone(e.target.value)} required />
                   </div>
+                  <div className="form-group">
+                    <label className="form-label">Username</label>
+                    <input className="form-control" placeholder="Enter login username" value={username} onChange={e => setUsername(e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Password</label>
+                    <input type="password" className="form-control" placeholder="Enter login password" value={password} onChange={e => setPassword(e.target.value)} required />
+                  </div>
                 </div>
                 <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
                   <button type="submit" className="btn btn-primary"><UserPlus size={14}/> Register & Generate Profile</button>
-                  <button type="button" className="btn btn-secondary" onClick={() => { setFirstName(''); setLastName(''); }}>Clear Form</button>
+                  <button type="button" className="btn btn-secondary" onClick={() => { setFirstName(''); setLastName(''); setDesignation(''); setEmail(''); setPhone(''); setUsername(''); setPassword(''); }}>Clear Form</button>
                 </div>
               </form>
             </div>
@@ -292,8 +380,8 @@ export default function UsersPage({ user }) {
                         <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{u.joinDate}</td>
                         <td>
                           <div style={{ display: 'flex', gap: 4 }}>
-                            <button className="btn btn-ghost btn-sm" onClick={() => alert('Edit triggered')}><Edit2 size={14} /></button>
-                            <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => alert('Delete triggered')}><Trash2 size={14} /></button>
+                            <button className="btn btn-ghost btn-sm" onClick={() => handleEditClick(u)}><Edit2 size={14} /></button>
+                            <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleDeleteClick(u.id || u.empNo)}><Trash2 size={14} /></button>
                           </div>
                         </td>
                       </tr>
@@ -314,6 +402,11 @@ export default function UsersPage({ user }) {
     <div>
       <Topbar title="Staff & Users" user={user?.name} />
       <div className="page-body">
+        {successMsg && (
+          <div style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 8, padding: '12px 16px', marginBottom: 20, color: '#34d399', fontWeight: 600 }}>
+            {successMsg}
+          </div>
+        )}
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 60, gap: 10, color: 'var(--text-secondary)' }}>
             <Loader2 className="animate-spin" size={24} />
@@ -323,6 +416,70 @@ export default function UsersPage({ user }) {
           renderContent()
         )}
       </div>
+
+      {showEditModal && (
+        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 style={{ margin: 0 }}>Edit Staff Profile - {editingUserId}</h3>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowEditModal(false)}><X size={16}/></button>
+            </div>
+            <form onSubmit={handleSaveEdit}>
+              <div className="modal-body">
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label className="form-label">First Name</label>
+                    <input className="form-control" value={editFirstName} onChange={e => setEditFirstName(e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Last Name</label>
+                    <input className="form-control" value={editLastName} onChange={e => setEditLastName(e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Select System Role</label>
+                    <select className="form-control" value={editRole} onChange={e => setEditRole(e.target.value)}>
+                      <option>Administrator</option>
+                      <option>Doctor</option>
+                      <option>Nurse</option>
+                      <option>Receptionist</option>
+                      <option>Pharmacist</option>
+                      <option>Cashier</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Assigned Department</label>
+                    <select className="form-control" value={editDept} onChange={e => setEditDept(e.target.value)}>
+                      {deptsList.map(d => (
+                        <option key={d.id} value={d.name}>{d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Designation / Title</label>
+                    <input className="form-control" value={editDesignation} onChange={e => setEditDesignation(e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Email Address</label>
+                    <input type="email" className="form-control" value={editEmail} onChange={e => setEditEmail(e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Phone Number</label>
+                    <input className="form-control" value={editPhone} onChange={e => setEditPhone(e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Change Password (leave blank to keep current)</label>
+                    <input type="password" className="form-control" placeholder="Enter new password" value={editPassword} onChange={e => setEditPassword(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

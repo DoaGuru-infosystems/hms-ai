@@ -17,6 +17,7 @@ export default function IPDAdmit({ user }) {
   const [departments, setDepartments] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [rooms, setRooms] = useState([]);
+  const [ipdList, setIpdList] = useState([]);
   
   // Filter lists
   const [roomFilter, setRoomFilter] = useState('');
@@ -109,19 +110,21 @@ export default function IPDAdmit({ user }) {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [patientsRes, deptsRes, doctorsRes, roomsRes] = await Promise.all([
+      const [patientsRes, deptsRes, doctorsRes, roomsRes, ipdRes] = await Promise.all([
         fetch(`${API_BASE}/patients`),
         fetch(`${API_BASE}/departments`),
         fetch(`${API_BASE}/doctors`),
-        fetch(`${API_BASE}/rooms`)
+        fetch(`${API_BASE}/rooms`),
+        fetch(`${API_BASE}/ipd`)
       ]);
 
-      if (patientsRes.ok && deptsRes.ok && doctorsRes.ok && roomsRes.ok) {
-        const [pData, dData, docData, rData] = await Promise.all([
+      if (patientsRes.ok && deptsRes.ok && doctorsRes.ok && roomsRes.ok && ipdRes.ok) {
+        const [pData, dData, docData, rData, ipdData] = await Promise.all([
           patientsRes.json(),
           deptsRes.json(),
           doctorsRes.json(),
-          roomsRes.json()
+          roomsRes.json(),
+          ipdRes.json()
         ]);
         
         const normalizedPatients = pData.map(p => ({
@@ -135,6 +138,7 @@ export default function IPDAdmit({ user }) {
         setDepartments(dData);
         setDoctors(docData);
         setRooms(rData);
+        setIpdList(Array.isArray(ipdData) ? ipdData.filter(r => r.status === 'Admitted') : []);
       }
     } catch (err) {
       console.error('Error fetching IPD resources:', err);
@@ -142,24 +146,49 @@ export default function IPDAdmit({ user }) {
       setLoading(false);
     }
   };
+  
+  const admittedPatientNos = new Set(ipdList.map(r => r.patientNo || r.patient_no));
 
-  const patientResults = patients.filter(p =>
-    `${p.patientNo} ${p.firstName || ''} ${p.lastName || ''}`.toLowerCase().includes(search.toLowerCase())
-  );
+  const patientResults = patients
+    .filter(p => !admittedPatientNos.has(p.patientNo))
+    .filter(p =>
+      `${p.patientNo} ${p.firstName || ''} ${p.lastName || ''}`.toLowerCase().includes(search.toLowerCase())
+    );
 
   const filteredRooms = rooms.filter(r => !roomFilter || r.id.toString() === roomFilter);
 
-  // Dynamically generate beds based on room capacity
+  // Dynamically generate beds based on room capacity and actual occupancy
   const generatedBeds = selectedRoom ? (() => {
     const total = selectedRoom.totalBeds || 10;
-    const vacant = selectedRoom.vacantBeds || 10;
-    const occupiedCount = total - vacant;
     const list = [];
     for (let i = 1; i <= total; i++) {
-      const isOccupied = i <= occupiedCount;
+      const bedNo = `RM-${selectedRoom.name}-${i.toString().padStart(2, '0')}`;
+      
+      const isOccupied = ipdList.some(p => {
+        // Room check
+        if (!p.room || !selectedRoom.name) return false;
+        const pRoomStr = p.room.toString().toLowerCase().replace('room', '').trim();
+        const sRoomStr = selectedRoom.name.toString().toLowerCase().replace('room', '').trim();
+        if (pRoomStr !== sRoomStr) return false;
+
+        // Bed check
+        if (p.bed === bedNo) return true;
+        const altBedName = `Bed ${selectedRoom.name}-${i}`;
+        if (p.bed === altBedName) return true;
+
+        let bedIndex = null;
+        if (p.bed) {
+          const matchIndex = p.bed.match(/-0*(\d+)$/) || p.bed.match(/Bed\s+0*(\d+)$/i) || p.bed.match(/^0*(\d+)$/);
+          if (matchIndex) {
+            bedIndex = parseInt(matchIndex[1], 10);
+          }
+        }
+        return bedIndex === i;
+      });
+
       list.push({
         id: `${selectedRoom.id}-${i}`,
-        bedNo: `RM-${selectedRoom.name}-${i.toString().padStart(2, '0')}`,
+        bedNo,
         status: isOccupied ? 'Occupied' : 'Vacant'
       });
     }
@@ -215,6 +244,9 @@ export default function IPDAdmit({ user }) {
   const handleSave = async (e) => {
     e.preventDefault();
     if (!selectedPatient) return alert('Select a patient first.');
+    if (admittedPatientNos.has(selectedPatient.patientNo)) {
+      return alert('Patient is already admitted to a ward and cannot be re-admitted until discharged.');
+    }
     if (!selectedBed) return alert('Select a bed to admit the patient.');
     if (!form.department || !form.doctor) return alert('Department and Doctor are required.');
 
@@ -260,12 +292,8 @@ export default function IPDAdmit({ user }) {
       // Clear React Router location state so it doesn't prefill again
       navigate(location.pathname, { replace: true, state: {} });
 
-      // Refresh rooms capacity list
-      const roomsRes = await fetch(`${API_BASE}/rooms`);
-      if (roomsRes.ok) {
-        const rData = await roomsRes.json();
-        setRooms(rData);
-      }
+      // Refresh all lists
+      fetchData();
 
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
@@ -326,7 +354,7 @@ export default function IPDAdmit({ user }) {
                 <span>⚡</span> Quick Select (Recently Registered Patients):
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {patients.slice(0, 5).map(p => (
+                {patients.filter(p => !admittedPatientNos.has(p.patientNo)).slice(0, 5).map(p => (
                   <button
                     key={p.id}
                     type="button"

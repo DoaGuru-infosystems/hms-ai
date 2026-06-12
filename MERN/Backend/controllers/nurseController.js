@@ -404,11 +404,11 @@ exports.createDischarge = async (req, res, next) => {
       dbJson.saveNurseDischarge(data);
 
       // Auto update status in IPD and OPD JSON DB
-      const ipd = dbJson.getIpdAdmissions();
+      const ipd = dbJson.getIpdRecords();
       ipd.forEach(i => {
         if (i.patientNo === patientVal && i.status === 'Admitted') i.status = 'Discharged';
       });
-      dbJson.saveIpdAdmissions(ipd);
+      dbJson.saveIpdRecords(ipd);
 
       const opd = dbJson.getOpdRecords();
       opd.forEach(o => {
@@ -463,14 +463,19 @@ exports.createRoomTransfer = async (req, res, next) => {
       `, [patientVal, oldRoom || '', newRoom, reason || '', by || '']);
 
       // Sync active IPD Admission
-      // We parse out the clean room number from e.g. "Room 101 / Bed A"
+      // We parse out the clean room number and bed number from e.g. "Room 101 / Bed A"
       let roomNoPart = newRoom;
+      let bedNoPart = '';
       const match = newRoom.match(/Room\s+([^\s/]+)/i);
       if (match) {
         roomNoPart = match[1];
       }
+      const bedMatch = newRoom.match(/\/\s*(.+)$/i);
+      if (bedMatch) {
+        bedNoPart = bedMatch[1].trim();
+      }
 
-      await db.query('UPDATE ipd_admissions SET room_no = ? WHERE patient_no = ? AND status = "Admitted"', [roomNoPart, patientVal]);
+      await db.query('UPDATE ipd_admissions SET room_no = ?, bed_no = ? WHERE (ipdId = ? OR patient_no = ?) AND status = "Admitted"', [roomNoPart, bedNoPart, patientVal, patientVal]);
 
       return res.status(201).json({ message: 'Room transfer logged and synced successfully' });
     } else {
@@ -486,19 +491,26 @@ exports.createRoomTransfer = async (req, res, next) => {
       dbJson.saveNurseRoomTransfer(data);
 
       // Sync active IPD Admission JSON DB
-      const ipd = dbJson.getIpdAdmissions();
+      const ipd = dbJson.getIpdRecords();
       let roomNoPart = newRoom;
+      let bedNoPart = '';
       const match = newRoom.match(/Room\s+([^\s/]+)/i);
       if (match) {
         roomNoPart = match[1];
       }
+      const bedMatch = newRoom.match(/\/\s*(.+)$/i);
+      if (bedMatch) {
+        bedNoPart = bedMatch[1].trim();
+      }
       ipd.forEach(i => {
-        if (i.patientNo === patientVal && i.status === 'Admitted') {
+        if ((i.id === patientVal || i.ipdId === patientVal || i.patientNo === patientVal) && i.status === 'Admitted') {
           i.roomNo = roomNoPart;
           i.room = roomNoPart;
+          i.bedNo = bedNoPart;
+          i.bed = bedNoPart;
         }
       });
-      dbJson.saveIpdAdmissions(ipd);
+      dbJson.saveIpdRecords(ipd);
 
       return res.status(201).json(newRec);
     }

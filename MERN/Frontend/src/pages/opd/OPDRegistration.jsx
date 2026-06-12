@@ -12,6 +12,7 @@ export default function OPDRegistration({ user }) {
   const [patients, setPatients] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [doctors, setDoctors] = useState([]);
+  const [ipdList, setIpdList] = useState([]);
   
   // UI states
   const [loading, setLoading] = useState(true);
@@ -59,17 +60,19 @@ export default function OPDRegistration({ user }) {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [patientsRes, deptsRes, doctorsRes] = await Promise.all([
+        const [patientsRes, deptsRes, doctorsRes, ipdRes] = await Promise.all([
           fetch(`${API_BASE}/patients`),
           fetch(`${API_BASE}/departments`),
-          fetch(`${API_BASE}/doctors`)
+          fetch(`${API_BASE}/doctors`),
+          fetch(`${API_BASE}/ipd`)
         ]);
 
-        if (patientsRes.ok && deptsRes.ok && doctorsRes.ok) {
-          const [pData, dData, docData] = await Promise.all([
+        if (patientsRes.ok && deptsRes.ok && doctorsRes.ok && ipdRes.ok) {
+          const [pData, dData, docData, ipdData] = await Promise.all([
             patientsRes.json(),
             deptsRes.json(),
-            doctorsRes.json()
+            doctorsRes.json(),
+            ipdRes.json()
           ]);
           
           const normalizedPatients = pData.map(p => ({
@@ -82,6 +85,7 @@ export default function OPDRegistration({ user }) {
           setPatients(normalizedPatients);
           setDepartments(dData);
           setDoctors(docData);
+          setIpdList(Array.isArray(ipdData) ? ipdData.filter(r => r.status === 'Admitted') : []);
         }
       } catch (err) {
         console.error('Error fetching OPD registry lists:', err);
@@ -92,9 +96,13 @@ export default function OPDRegistration({ user }) {
     fetchData();
   }, []);
 
-  const results = patients.filter(p =>
-    `${p.patientNo} ${p.firstName || ''} ${p.lastName || ''}`.toLowerCase().includes(search.toLowerCase())
-  );
+  const admittedPatientNos = new Set(ipdList.map(r => r.patientNo || r.patient_no));
+
+  const results = patients
+    .filter(p => !admittedPatientNos.has(p.patientNo))
+    .filter(p =>
+      `${p.patientNo} ${p.firstName || ''} ${p.lastName || ''}`.toLowerCase().includes(search.toLowerCase())
+    );
 
   const handleQuickRegister = async () => {
     if (!quickForm.firstName || !quickForm.lastName || !quickForm.age || !quickForm.phone) {
@@ -139,6 +147,9 @@ export default function OPDRegistration({ user }) {
   const handleSave = async (e) => {
     e.preventDefault();
     if (!selected) return alert('Please select a patient first.');
+    if (admittedPatientNos.has(selected.patientNo)) {
+      return alert('Patient is currently admitted to a ward and cannot register for OPD until discharged.');
+    }
     if (!form.department || !form.doctor) return alert('Department and Doctor are required.');
 
     try {
@@ -219,7 +230,7 @@ export default function OPDRegistration({ user }) {
                 <span style={{ fontSize: 13 }}>⚡</span> Quick Select (Recently Registered Patients):
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {patients.slice(0, 5).map(p => (
+                {patients.filter(p => !admittedPatientNos.has(p.patientNo)).slice(0, 5).map(p => (
                   <button
                     key={p.id}
                     type="button"

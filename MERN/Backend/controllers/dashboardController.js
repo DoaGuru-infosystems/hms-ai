@@ -32,7 +32,7 @@ exports.getDashboardStats = async (req, res, next) => {
       const rooms = dbJson.getRooms();
       const bills = dbJson.getBills();
       const opd = dbJson.getOpdRecords();
-      const ipd = dbJson.getIpdAdmissions();
+      const ipd = dbJson.getIpdRecords();
       const doctors = dbJson.getDoctors();
 
       const totalBeds = rooms.reduce((acc, r) => acc + r.totalBeds, 0);
