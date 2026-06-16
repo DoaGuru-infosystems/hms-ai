@@ -61,7 +61,7 @@ export default function NurseVitalSigns({ user }) {
   };
 
   return (
-    <div>
+    <div className="nurse-theme">
       <Topbar title="Nurse — Vital Signs" user={user?.name} />
       <div className="page-body">
         <div className="page-header"><div><h2>Vital Signs</h2><p>Record patient vital measurements</p></div></div>
@@ -114,9 +114,9 @@ export default function NurseVitalSigns({ user }) {
                       </div>
                       <div className="grid-3" style={{ gap:8 }}>
                         {[['BP', r.bp+' mmHg'],['Temp', r.temp+'°F'],['Pulse', r.pulse+' bpm'],['Resp', r.resp+'/min'],['SpO2', r.spo2+'%'],['Weight', r.weight+' kg']].map(([k,v]) => (
-                          <div key={k} style={{ background:'var(--bg-card)', borderRadius:6, padding:'8px 10px' }}>
-                            <div style={{ fontSize:10, color:'var(--text-muted)' }}>{k}</div>
-                            <div style={{ fontWeight:700, color:'var(--accent-light)', fontSize:13 }}>{v}</div>
+                          <div key={k} className="vital-box">
+                            <div style={{ fontSize:10, color:'var(--nurse-text-muted)', fontWeight: 600 }}>{k}</div>
+                            <div style={{ fontWeight:700, color:'var(--nurse-primary)', fontSize:13 }}>{v}</div>
                           </div>
                         ))}
                       </div>

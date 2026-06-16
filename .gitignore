@@ -10,13 +10,10 @@ build/
 out/
 
 # Environment variables / Credentials
-.env
-.env.local
 .env.development.local
 .env.test.local
 .env.production.local
 *.env
-**/.env
 **/*.env
 
 # Logs
@@ -33,10 +30,10 @@ Thumbs.db
 **/.DS_Store
 
 # IDEs and editors
-.vscode/
 .idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+config.bat

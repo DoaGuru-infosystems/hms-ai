@@ -114,6 +114,7 @@ function AppLayout({ user, onLogout }) {
 
           {/* Room Management */}
           <Route path="/rooms/enquiry" element={<RoomsPage user={user} />} />
+          <Route path="/rooms/buildings" element={<RoomsPage user={user} />} />
           <Route path="/rooms/category" element={<RoomsPage user={user} />} />
           <Route path="/rooms/master" element={<RoomsPage user={user} />} />
           <Route path="/rooms/beds" element={<RoomsPage user={user} />} />

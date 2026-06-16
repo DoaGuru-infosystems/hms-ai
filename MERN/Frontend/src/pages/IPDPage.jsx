@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Eye, ArrowLeftRight, Loader2 } from 'lucide-react';
 import Topbar from '../components/Topbar';
@@ -7,6 +7,8 @@ export default function IPDPage({ user }) {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [ipdList, setIpdList] = useState([]);
+  const [loadingSearch, setLoadingSearch] = useState(false);
+  const debounceTimer = useRef(null);
 
   // Ward Transfer States
   const [transferPatient, setTransferPatient] = useState(null);
@@ -16,25 +18,33 @@ export default function IPDPage({ user }) {
   const [reason, setReason] = useState('Clinical Ward Transfer');
   const [savingTransfer, setSavingTransfer] = useState(false);
 
-  useEffect(() => {
-    fetchIpd();
-  }, []);
-
-  const fetchIpd = () => {
-    fetch('http://localhost:5001/api/ipd')
+  const fetchIpd = useCallback((searchVal = '') => {
+    const qs = searchVal ? `?search=${encodeURIComponent(searchVal)}` : '';
+    fetch(`http://localhost:5001/api/ipd${qs}`)
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) {
-          setIpdList(data);
-        } else {
-          setIpdList([]);
-        }
+        if (Array.isArray(data)) setIpdList(data);
+        else setIpdList([]);
       })
       .catch(err => {
         console.log('Failed to fetch IPD records.', err);
         setIpdList([]);
       });
-  };
+  }, []);
+
+  // Initial load + poll every 10s (unfiltered, for stats)
+  useEffect(() => {
+    fetchIpd();
+    const interval = setInterval(() => fetchIpd(), 10000);
+    return () => clearInterval(interval);
+  }, [fetchIpd]);
+
+  // Debounced search
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => fetchIpd(search), 400);
+    return () => clearTimeout(debounceTimer.current);
+  }, [search, fetchIpd]);
 
   const handleTransferSubmit = async () => {
     if (!selectedRoom || !selectedBed) return alert('Please select a room and bed.');
@@ -71,9 +81,8 @@ export default function IPDPage({ user }) {
     }
   };
 
-  const filtered = ipdList.filter(r =>
-    `${r.patientName || ''} ${r.ioId || ''} ${r.doctor || ''}`.toLowerCase().includes(search.toLowerCase())
-  );
+  // ipdList is already backend-filtered; use directly
+  const filtered = ipdList;
 
   // Calculate vacant beds dynamically for room selection catalog
   const roomsCatalog = rooms.map(r => {

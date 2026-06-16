@@ -9,6 +9,7 @@ router.post('/vitals', nurseController.createVitals);
 // Medication Chart
 router.get('/medication', nurseController.getMedication);
 router.post('/medication', nurseController.createMedication);
+router.put('/medication/:id', nurseController.updateMedication);
 
 // Intake Output Logs
 router.get('/intake-output', nurseController.getIntakeOutput);

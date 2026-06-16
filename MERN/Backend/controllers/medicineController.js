@@ -5,7 +5,19 @@ const isMysqlConnected = () => db.getDbType() === 'mysql';
 
 exports.getAllMedicines = async (req, res, next) => {
   try {
+    const { search } = req.query;
+
     if (isMysqlConnected()) {
+      let conditions = [];
+      let params = [];
+
+      if (search) {
+        conditions.push(`(m.name LIKE ? OR m.category LIKE ? OR m.type LIKE ?)`);
+        const s = `%${search}%`;
+        params.push(s, s, s);
+      }
+
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
       const rows = await db.query(`
         SELECT 
           m.id,
@@ -18,11 +30,19 @@ exports.getAllMedicines = async (req, res, next) => {
           m.reorder,
           m.status
         FROM medicines m
+        ${whereClause}
         ORDER BY m.name ASC
-      `);
+      `, params);
       return res.json(rows);
     } else {
-      return res.json(dbJson.getMedicines().filter(m => m.status !== 'Inactive'));
+      let medicines = dbJson.getMedicines().filter(m => m.status !== 'Inactive');
+      if (search) {
+        const s = search.toLowerCase();
+        medicines = medicines.filter(m =>
+          `${m.name} ${m.category} ${m.type}`.toLowerCase().includes(s)
+        );
+      }
+      return res.json(medicines);
     }
   } catch (error) {
     next(error);

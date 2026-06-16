@@ -329,7 +329,7 @@ export default function AppointmentAdd({ user }) {
                   <input 
                     type="date" 
                     className="form-control" 
-                    value={form.date} 
+                    value={form.date}
                     onChange={e => setForm({ ...form, date: e.target.value })} 
                     required 
                   />

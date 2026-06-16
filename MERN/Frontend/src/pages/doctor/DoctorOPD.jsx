@@ -284,9 +284,28 @@ export default function DoctorOPD({ user }) {
         if (Array.isArray(data)) {
           const filtered = data.filter(r => {
             const matchesStatus = r.status === 'Active';
-            const matchesDoctorId = String(r.doctorId) === String(user?.id) || String(r.doctor_id) === String(user?.id);
-            const docName = String(user?.name || '').toLowerCase();
-            const matchesDoctorName = docName && String(r.doctor || '').toLowerCase().includes(docName.replace('Dr. ', '').toLowerCase());
+            
+            const docIds = new Set([
+              String(user?.id || '').toLowerCase(),
+              String(user?.empNo || '').toLowerCase(),
+              String(user?.name || '').toLowerCase().replace('dr. ', '').trim()
+            ]);
+            
+            const rDocId = String(r.doctorId || r.doctor_id || '').toLowerCase();
+            const rDocName = String(r.doctor || '').toLowerCase().replace('dr. ', '').trim();
+
+            const matchesDoctorId = docIds.has(rDocId) || 
+                                    (rDocId === '00007' && docIds.has('emp-007')) ||
+                                    (rDocId === 'emp-007' && docIds.has('00007')) ||
+                                    (rDocId === '00008' && docIds.has('emp-008')) ||
+                                    (rDocId === 'emp-008' && docIds.has('00008')) ||
+                                    (rDocId === '00011' && docIds.has('emp-011')) ||
+                                    (rDocId === 'emp-011' && docIds.has('00011'));
+            
+            const matchesDoctorName = docIds.has(rDocName) || 
+                                      (user?.name && rDocName.includes(String(user.name).toLowerCase().replace('dr. ', '').trim())) ||
+                                      (rDocName && String(user?.name || '').toLowerCase().includes(rDocName));
+
             return matchesStatus && (matchesDoctorId || matchesDoctorName);
           });
           setMyPatients(filtered);
@@ -451,7 +470,7 @@ export default function DoctorOPD({ user }) {
                   type="date" 
                   className="form-control" 
                   style={{ width: 160, padding: '4px 10px', fontSize: 13 }}
-                  value={timelineDate} 
+                  value={timelineDate}
                   onChange={e => setTimelineDate(e.target.value)} 
                 />
               </div>

@@ -6,7 +6,40 @@ const getTodayDate = () => new Date().toISOString().split('T')[0];
 
 exports.getAllOPD = async (req, res, next) => {
   try {
+    const { search, doctor, startDate, endDate, date, status } = req.query;
+
     if (isMysqlConnected()) {
+      let conditions = [];
+      let params = [];
+
+      if (search) {
+        conditions.push(`(CONCAT(p.firstname, ' ', p.lastname) LIKE ? OR o.patient_no LIKE ? OR o.ioId LIKE ?)`);
+        const s = `%${search}%`;
+        params.push(s, s, s);
+      }
+      if (doctor) {
+        conditions.push(`CONCAT(d.firstname, ' ', d.lastname) LIKE ?`);
+        params.push(`%${doctor}%`);
+      }
+      if (date) {
+        conditions.push(`DATE(o.dateVisit) = ?`);
+        params.push(date);
+      }
+      if (startDate) {
+        conditions.push(`DATE(o.dateVisit) >= ?`);
+        params.push(startDate);
+      }
+      if (endDate) {
+        conditions.push(`DATE(o.dateVisit) <= ?`);
+        params.push(endDate);
+      }
+      if (status === 'Paid') {
+        conditions.push(`o.isPaid = 1`);
+      } else if (status === 'Unpaid') {
+        conditions.push(`o.isPaid = 0`);
+      }
+
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
       const rows = await db.query(`
         SELECT 
           o.ioId,
@@ -24,11 +57,36 @@ exports.getAllOPD = async (req, res, next) => {
         LEFT JOIN patient_personal_info p ON o.patient_no = p.patient_no
         LEFT JOIN users d ON o.doctor_id = d.user_id
         LEFT JOIN department dept ON o.dept_id = dept.department_id
+        ${whereClause}
         ORDER BY o.dateVisit DESC, o.ioId DESC
-      `);
+      `, params);
       return res.json(rows);
     } else {
-      return res.json(dbJson.getOpdRecords());
+      let records = dbJson.getOpdRecords();
+      if (search) {
+        const s = search.toLowerCase();
+        records = records.filter(r =>
+          `${r.patientName || ''} ${r.patientNo || ''} ${r.ioId || ''}`.toLowerCase().includes(s)
+        );
+      }
+      if (doctor) {
+        records = records.filter(r => (r.doctor || '').toLowerCase().includes(doctor.toLowerCase()));
+      }
+      if (date) {
+        records = records.filter(r => (r.dateVisit || '').startsWith(date));
+      }
+      if (startDate) {
+        records = records.filter(r => (r.dateVisit || '') >= startDate);
+      }
+      if (endDate) {
+        records = records.filter(r => (r.dateVisit || '') <= endDate);
+      }
+      if (status === 'Paid') {
+        records = records.filter(r => r.isPaid);
+      } else if (status === 'Unpaid') {
+        records = records.filter(r => !r.isPaid);
+      }
+      return res.json(records);
     }
   } catch (error) {
     next(error);

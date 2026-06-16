@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CalendarCheck, Clock, Video, User, Plus, RefreshCw, Layers, Calendar, CheckCircle } from 'lucide-react';
 import Topbar from '../../components/Topbar';
+import ClockTimePicker from '../../components/ClockTimePicker';
 
 export default function MeetingSchedulerPage({ user }) {
   const [meetings, setMeetings] = useState([
@@ -96,10 +97,13 @@ export default function MeetingSchedulerPage({ user }) {
                     <label className="form-label">Date</label>
                     <input type="date" className="form-control" value={newMeeting.date} onChange={e => setNewMeeting({...newMeeting, date: e.target.value})} required />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Time</label>
-                    <input type="time" className="form-control" value={newMeeting.time} onChange={e => setNewMeeting({...newMeeting, time: e.target.value})} required />
-                  </div>
+                  <ClockTimePicker
+                    label="Time"
+                    value={newMeeting.time}
+                    onChange={val => setNewMeeting({...newMeeting, time: val})}
+                    className="form-group"
+                    required
+                  />
                 </div>
                 <button type="submit" className="btn btn-primary w-full" style={{ justifyContent: 'center', marginTop: 12 }}>
                   <Plus size={14} /> Schedule Meeting & Generate Video Link

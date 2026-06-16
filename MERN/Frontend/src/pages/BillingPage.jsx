@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Plus, Printer, TrendingUp, AlertTriangle, FileText, CheckCircle2 } from 'lucide-react';
 import Topbar from '../components/Topbar';
 
@@ -8,32 +8,31 @@ export default function BillingPage({ user }) {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState('All');
   const [billsList, setBillsList] = useState([]);
+  const debounceTimer = useRef(null);
 
-  useEffect(() => {
-    fetchBills();
+  const fetchBills = useCallback((searchVal = '', statusVal = 'All') => {
+    const params = new URLSearchParams();
+    if (searchVal) params.set('search', searchVal);
+    if (statusVal !== 'All') params.set('status', statusVal);
+    const qs = params.toString();
+    fetch(`http://localhost:5001/api/bills${qs ? `?${qs}` : ''}`)
+      .then(res => res.json())
+      .then(data => setBillsList(Array.isArray(data) ? data : []))
+      .catch(err => { console.log('Billing API fetch offline.', err); setBillsList([]); });
   }, []);
 
-  const fetchBills = () => {
-    fetch('http://localhost:5001/api/bills')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setBillsList(data);
-        } else {
-          setBillsList([]);
-        }
-      })
-      .catch(err => {
-        console.log('Billing API fetch offline.', err);
-        setBillsList([]);
-      });
-  };
+  // Initial load
+  useEffect(() => { fetchBills(); }, [fetchBills]);
 
-  const filtered = billsList.filter(b => {
-    const matchSearch = `${b.patientName || ''} ${b.invoiceNo || ''}`.toLowerCase().includes(search.toLowerCase());
-    const matchTab = tab === 'All' || b.status === tab;
-    return matchSearch && matchTab;
-  });
+  // Debounced search + tab
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => fetchBills(search, tab), 400);
+    return () => clearTimeout(debounceTimer.current);
+  }, [search, tab, fetchBills]);
+
+  // Already backend-filtered
+  const filtered = billsList;
 
   const totalRevenue = billsList.reduce((s, b) => s + b.paid, 0);
   const totalPending = billsList.reduce((s, b) => s + (b.total - b.paid), 0);

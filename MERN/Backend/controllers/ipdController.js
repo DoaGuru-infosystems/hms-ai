@@ -6,7 +6,19 @@ const getTodayDate = () => new Date().toISOString().split('T')[0];
 
 exports.getAllIPD = async (req, res, next) => {
   try {
+    const { search } = req.query;
+
     if (isMysqlConnected()) {
+      let conditions = [];
+      let params = [];
+
+      if (search) {
+        conditions.push(`(CONCAT(p.firstname, ' ', p.lastname) LIKE ? OR i.patient_no LIKE ? OR CONCAT(d.firstname, ' ', d.lastname) LIKE ?)`);
+        const s = `%${search}%`;
+        params.push(s, s, s);
+      }
+
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
       const rows = await db.query(`
         SELECT 
           i.ipdId as id,
@@ -22,6 +34,7 @@ exports.getAllIPD = async (req, res, next) => {
           i.bed_no as bedNo,
           DATE_FORMAT(i.admitDate, '%Y-%m-%d') as admitDate,
           DATE_FORMAT(i.admitDate, '%Y-%m-%d') as dateAdmit,
+          (SELECT DATE_FORMAT(nd.discharge_date, '%Y-%m-%d') FROM nurse_discharge nd WHERE nd.patient = i.patient_no ORDER BY nd.id DESC LIMIT 1) as dischargeDate,
           i.complaints,
           i.diagnosis,
           i.status
@@ -29,22 +42,37 @@ exports.getAllIPD = async (req, res, next) => {
         LEFT JOIN patient_personal_info p ON i.patient_no = p.patient_no
         LEFT JOIN users d ON i.doctor_id = d.user_id
         LEFT JOIN department dept ON i.dept_id = dept.department_id
+        ${whereClause}
         ORDER BY i.admitDate DESC, i.ipdId DESC
-      `);
+      `, params);
       return res.json(rows);
     } else {
-      const data = dbJson.getIpdRecords();
-      // Ensure all fallback items have the redundant keys too
-      return res.json(data.map(i => ({
-        ...i,
-        ioId: i.ioId || i.ipdId,
-        room: i.room || i.roomNo,
-        roomNo: i.roomNo || i.room,
-        bed: i.bed || i.bedNo,
-        bedNo: i.bedNo || i.bed,
-        admitDate: i.admitDate || i.dateAdmit,
-        dateAdmit: i.dateAdmit || i.admitDate
-      })));
+      let data = dbJson.getIpdRecords();
+      const discharges = dbJson.getNurseDischarge();
+
+      if (search) {
+        const s = search.toLowerCase();
+        data = data.filter(r =>
+          `${r.patientName || ''} ${r.ioId || ''} ${r.doctor || ''}`.toLowerCase().includes(s)
+        );
+      }
+
+      return res.json(data.map(i => {
+        const matchingDischarge = discharges
+          .filter(d => d.patient === i.patientNo)
+          .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))[0];
+        return {
+          ...i,
+          ioId: i.ioId || i.ipdId,
+          room: i.room || i.roomNo,
+          roomNo: i.roomNo || i.room,
+          bed: i.bed || i.bedNo,
+          bedNo: i.bedNo || i.bed,
+          admitDate: i.admitDate || i.dateAdmit,
+          dateAdmit: i.dateAdmit || i.admitDate,
+          dischargeDate: matchingDischarge ? (matchingDischarge.dischargeDate || '').split('T')[0] : ''
+        };
+      }));
     }
   } catch (error) {
     next(error);

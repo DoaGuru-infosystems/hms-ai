@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Eye, FileText, Loader2, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../../components/Topbar';
@@ -11,28 +11,27 @@ export default function OPDEnquiry({ user }) {
   const [selected, setSelected] = useState(null);
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
+  const debounceTimer = useRef(null);
 
-  useEffect(() => {
-    fetchOPDRecords();
+  const fetchOPDRecords = useCallback((searchVal = '') => {
+    setLoading(true);
+    const qs = searchVal ? `?search=${encodeURIComponent(searchVal)}` : '';
+    fetch(`${API_BASE}/opd${qs}`)
+      .then(res => res.json())
+      .then(data => setRecords(Array.isArray(data) ? data : []))
+      .catch(err => { console.error('Error fetching OPD records:', err); setRecords([]); })
+      .finally(() => setLoading(false));
   }, []);
 
-  const fetchOPDRecords = () => {
-    setLoading(true);
-    fetch(`${API_BASE}/opd`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setRecords(data);
-        } else {
-          setRecords([]);
-        }
-      })
-      .catch(err => {
-        console.error('Error fetching OPD records:', err);
-        setRecords([]);
-      })
-      .finally(() => setLoading(false));
-  };
+  // Initial load
+  useEffect(() => { fetchOPDRecords(); }, [fetchOPDRecords]);
+
+  // Debounced search
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => fetchOPDRecords(search), 400);
+    return () => clearTimeout(debounceTimer.current);
+  }, [search, fetchOPDRecords]);
 
   const handleConvertToIPD = (opdRecord) => {
     navigate('/ipd/admit', { state: { convertFromOPD: opdRecord } });
@@ -58,9 +57,8 @@ export default function OPDEnquiry({ user }) {
     }
   };
 
-  const filtered = records.filter(r => 
-    `${r.patientName || ''} ${r.ioId || ''} ${r.doctor || ''} ${r.department || ''}`.toLowerCase().includes(search.toLowerCase())
-  );
+  // records already backend-filtered; use directly
+  const filtered = records;
 
   return (
     <div>

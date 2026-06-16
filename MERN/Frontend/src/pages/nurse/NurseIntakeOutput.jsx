@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Save, Plus, Trash2, Loader2 } from 'lucide-react';
 import Topbar from '../../components/Topbar';
+import ClockTimePicker from '../../components/ClockTimePicker';
 
 const API_BASE = 'http://localhost:5001/api';
 
@@ -92,7 +93,7 @@ export default function NurseIntakeOutput({ user }) {
   const outputTypes = ['Urine','Stool','Vomitus','Wound Drainage','NGT Drainage'];
 
   return (
-    <div>
+    <div className="nurse-theme">
       <Topbar title="Nurse — Intake / Output" user={user?.name} />
       <div className="page-body">
         <div className="page-header"><div><h2>Intake / Output Record</h2><p>Track fluid balance for admitted patients</p></div></div>
@@ -129,7 +130,7 @@ export default function NurseIntakeOutput({ user }) {
                           <td><input className="form-control" type="number" placeholder="0" value={row.amount} onChange={e => updateRow(setIntakeRows,intakeRows,i,'amount',e.target.value)} /></td>
                           <td><select className="form-control" value={row.route} onChange={e => updateRow(setIntakeRows,intakeRows,i,'route',e.target.value)}>
                             {['Oral','IV','NGT'].map(r=><option key={r}>{r}</option>)}</select></td>
-                          <td><input type="time" className="form-control" value={row.time} onChange={e => updateRow(setIntakeRows,intakeRows,i,'time',e.target.value)} /></td>
+                          <td><ClockTimePicker value={row.time} onChange={val => updateRow(setIntakeRows,intakeRows,i,'time',val)} /></td>
                           <td><button type="button" className="btn btn-ghost btn-sm" style={{ color:'var(--danger)' }} onClick={() => removeRow(setIntakeRows,intakeRows,i)}><Trash2 size={13}/></button></td>
                         </tr>
                       ))}</tbody>
@@ -148,7 +149,7 @@ export default function NurseIntakeOutput({ user }) {
                           <td><select className="form-control" value={row.type} onChange={e => updateRow(setOutputRows,outputRows,i,'type',e.target.value)}>
                             <option value="">—</option>{outputTypes.map(t=><option key={t}>{t}</option>)}</select></td>
                           <td><input className="form-control" type="number" placeholder="0" value={row.amount} onChange={e => updateRow(setOutputRows,outputRows,i,'amount',e.target.value)} /></td>
-                          <td><input type="time" className="form-control" value={row.time} onChange={e => updateRow(setOutputRows,outputRows,i,'time',e.target.value)} /></td>
+                          <td><ClockTimePicker value={row.time} onChange={val => updateRow(setOutputRows,outputRows,i,'time',val)} /></td>
                           <td><button type="button" className="btn btn-ghost btn-sm" style={{ color:'var(--danger)' }} onClick={() => removeRow(setOutputRows,outputRows,i)}><Trash2 size={13}/></button></td>
                         </tr>
                       ))}</tbody>

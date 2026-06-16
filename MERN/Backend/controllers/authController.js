@@ -16,8 +16,8 @@ exports.login = async (req, res, next) => {
         SELECT u.*, dept.dept_name as deptName 
         FROM users u 
         LEFT JOIN department dept ON u.department = dept.department_id 
-        WHERE u.username = ? AND u.InActive = 0
-      `, [username]);
+        WHERE (u.username = ? OR u.email_address = ?) AND u.InActive = 0
+      `, [username, username]);
 
       if (rows.length === 0) {
         return res.status(401).json({ error: 'Invalid username or password' });
@@ -53,7 +53,7 @@ exports.login = async (req, res, next) => {
 
     } else {
       const usersList = dbJson.getUsers();
-      const user = usersList.find(u => u.username === username && u.status === 'Active');
+      const user = usersList.find(u => (u.username === username || u.email === username) && u.status === 'Active');
       if (!user || user.password !== password) {
         return res.status(401).json({ error: 'Invalid username or password' });
       }

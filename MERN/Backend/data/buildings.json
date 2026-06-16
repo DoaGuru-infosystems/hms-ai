@@ -1,0 +1,22 @@
+[
+  {
+    "id": "1",
+    "name": "Main Building",
+    "totalFloors": 5
+  },
+  {
+    "id": "2",
+    "name": "Specialty Tower",
+    "totalFloors": 8
+  },
+  {
+    "id": "3",
+    "name": "Emergency Wing",
+    "totalFloors": 10
+  },
+  {
+    "id": "4",
+    "name": "Trauma Center",
+    "totalFloors": 4
+  }
+]
