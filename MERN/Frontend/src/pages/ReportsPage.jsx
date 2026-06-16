@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Search, Download, Printer, User, FileText, Calendar, DollarSign, Stethoscope, Bed, LogOut, Check, ChevronRight, Activity, Receipt, Loader2 } from 'lucide-react';
@@ -29,6 +29,14 @@ export default function ReportsPage({ user }) {
   const [filterGender, setFilterGender] = useState('All');
   const [selectedPatientId, setSelectedPatientId] = useState('');
 
+  // Advanced filters for OPD Volume & IPD Census
+  const [advSearch, setAdvSearch] = useState('');
+  const [advDoctor, setAdvDoctor] = useState('');
+  const [advDate, setAdvDate] = useState('');
+  const [advDateMode, setAdvDateMode] = useState('single'); // 'single' | 'range'
+  const [advDateStart, setAdvDateStart] = useState('');
+  const [advDateEnd, setAdvDateEnd] = useState('');
+
   // Dynamic live lists from MySQL API
   const [patients, setPatients] = useState([]);
   const [opdRecords, setOpdRecords] = useState([]);
@@ -37,11 +45,80 @@ export default function ReportsPage({ user }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchReportsData();
-  }, []);
+  const debounceTimer = useRef(null);
 
-  const fetchReportsData = async () => {
+  const buildOpdQs = useCallback(() => {
+    const p = new URLSearchParams();
+    if (advSearch) p.set('search', advSearch);
+    if (advDoctor) p.set('doctor', advDoctor);
+    if (advDateMode === 'single' && advDate) p.set('date', advDate);
+    if (advDateMode === 'range' && advDateStart) p.set('startDate', advDateStart);
+    if (advDateMode === 'range' && advDateEnd) p.set('endDate', advDateEnd);
+    if (filterStatus !== 'All') p.set('status', filterStatus);
+    return p.toString();
+  }, [advSearch, advDoctor, advDate, advDateMode, advDateStart, advDateEnd, filterStatus]);
+
+  const buildIpdQs = useCallback(() => {
+    const p = new URLSearchParams();
+    if (advSearch) p.set('search', advSearch);
+    if (advDateMode === 'single' && advDate) p.set('date', advDate);
+    if (advDateMode === 'range' && advDateStart) p.set('startDate', advDateStart);
+    if (advDateMode === 'range' && advDateEnd) p.set('endDate', advDateEnd);
+    return p.toString();
+  }, [advSearch, advDate, advDateMode, advDateStart, advDateEnd]);
+
+  const buildPatientQs = useCallback(() => {
+    const p = new URLSearchParams();
+    if (search) p.set('search', search);
+    if (filterStatus !== 'All') p.set('status', filterStatus);
+    if (filterGender !== 'All') p.set('gender', filterGender);
+    return p.toString();
+  }, [search, filterStatus, filterGender]);
+
+  const buildBillQs = useCallback(() => {
+    const p = new URLSearchParams();
+    if (search) p.set('search', search);
+    if (filterStatus !== 'All') p.set('status', filterStatus);
+    return p.toString();
+  }, [search, filterStatus]);
+
+  const fetchFilteredData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [patientsRes, opdRes, ipdRes, billsRes, usersRes] = await Promise.all([
+        fetch(`${API_BASE}/patients?${buildPatientQs()}`),
+        fetch(`${API_BASE}/opd?${buildOpdQs()}`),
+        fetch(`${API_BASE}/ipd?${buildIpdQs()}`),
+        fetch(`${API_BASE}/bills?${buildBillQs()}`),
+        fetch(`${API_BASE}/users`)
+      ]);
+
+      if (patientsRes.ok && opdRes.ok && ipdRes.ok && billsRes.ok && usersRes.ok) {
+        const [pat, opd, ipd, bil, usr] = await Promise.all([
+          patientsRes.json(),
+          opdRes.json(),
+          ipdRes.json(),
+          billsRes.json(),
+          usersRes.json()
+        ]);
+        setPatients(pat);
+        setOpdRecords(opd);
+        setIpdRecords(ipd);
+        setBills(bil);
+        setUsers(usr);
+
+        if (pat.length > 0 && !selectedPatientId) {
+          setSelectedPatientId(pat[0].id.toString());
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching clinical audit reports:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [buildPatientQs, buildOpdQs, buildIpdQs, buildBillQs, selectedPatientId]);
+
+  const fetchReportsData = useCallback(async () => {
     try {
       setLoading(true);
       const [patientsRes, opdRes, ipdRes, billsRes, usersRes] = await Promise.all([
@@ -65,7 +142,7 @@ export default function ReportsPage({ user }) {
         setIpdRecords(ipd);
         setBills(bil);
         setUsers(usr);
-        
+
         if (pat.length > 0) {
           setSelectedPatientId(pat[0].id.toString());
         }
@@ -75,7 +152,19 @@ export default function ReportsPage({ user }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    fetchReportsData();
+  }, [fetchReportsData]);
+
+  // Debounced refetch on filter changes
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => fetchFilteredData(), 400);
+    return () => clearTimeout(debounceTimer.current);
+  }, [fetchFilteredData]);
 
   // Compile monthly revenue and patient count dynamically
   const monthlyRevenueData = useMemo(() => {
@@ -97,16 +186,8 @@ export default function ReportsPage({ user }) {
     return filtered.length > 0 ? filtered : [{ month: 'May', revenue: 0, patients: 0 }];
   }, [bills]);
 
-  // 1. Patient Masterlist Report Filters
-  const filteredPatients = useMemo(() => {
-    return patients.filter(p => {
-      const matchSearch = `${p.firstName || ''} ${p.lastName || ''} ${p.patientNo || ''}`.toLowerCase().includes(search.toLowerCase());
-      const matchStatus = filterStatus === 'All' || p.status === filterStatus;
-      const gStr = p.gender === 1 ? 'Male' : (p.gender === 2 ? 'Female' : p.gender);
-      const matchGender = filterGender === 'All' || gStr === filterGender;
-      return matchSearch && matchStatus && matchGender;
-    });
-  }, [patients, search, filterStatus, filterGender]);
+  // 1. Patient Masterlist - now filtered from backend
+  const filteredPatients = patients;
 
   // 2. Individual Patient Report Details
   const selectedPatient = useMemo(() => {
@@ -128,41 +209,18 @@ export default function ReportsPage({ user }) {
     return bills.filter(b => b.patientNo === selectedPatient.patientNo);
   }, [selectedPatient, bills]);
 
-  // 3. OPD Report
-  const filteredOPD = useMemo(() => {
-    return opdRecords.filter(r => {
-      const matchSearch = `${r.patientName || ''} ${r.patientNo || ''} ${r.doctor || ''} ${r.ioId || ''}`.toLowerCase().includes(search.toLowerCase());
-      const matchPaid = filterStatus === 'All' || (filterStatus === 'Paid' ? r.isPaid : !r.isPaid);
-      return matchSearch && matchPaid;
-    });
-  }, [opdRecords, search, filterStatus]);
+  // 3. OPD Volume Report - now filtered from backend
+  const filteredOPD = opdRecords;
 
-  // 4. IPD/Admitted Patient Report
-  const filteredIPD = useMemo(() => {
-    return ipdRecords.filter(r => {
-      const matchSearch = `${r.patientName || ''} ${r.patientNo || ''} ${r.doctor || ''} ${r.diagnosis || ''}`.toLowerCase().includes(search.toLowerCase());
-      const matchAdmitted = r.status === 'Admitted';
-      return matchSearch && matchAdmitted;
-    });
-  }, [ipdRecords, search]);
+  // 4. IPD Census Report - now filtered from backend
+  const filteredIPD = ipdRecords.filter(r => r.status === 'Admitted');
 
-  // 5. Discharged Patient Report
-  const filteredDischarged = useMemo(() => {
-    return ipdRecords.filter(r => {
-      const matchSearch = `${r.patientName || ''} ${r.patientNo || ''} ${r.doctor || ''} ${r.diagnosis || ''}`.toLowerCase().includes(search.toLowerCase());
-      const matchDischarged = r.status === 'Discharged';
-      return matchSearch && matchDischarged;
-    });
-  }, [ipdRecords, search]);
+  // 5. Discharged Patient Report - filtered from backend
+  const filteredDischarged = ipdRecords.filter(r => r.status === 'Discharged');
 
-  // 6. Daily Sales Report
-  const filteredSales = useMemo(() => {
-    return bills.filter(b => {
-      const matchSearch = `${b.invoiceNo || ''} ${b.patientName || ''} ${b.paymentType || ''}`.toLowerCase().includes(search.toLowerCase());
-      const matchStatus = filterStatus === 'All' || b.status === filterStatus;
-      return matchSearch && matchStatus;
-    });
-  }, [bills, search, filterStatus]);
+  // 6. Daily Sales Report - filtered from backend
+  const filteredSales = bills;
+
 
   // 7. Doctor's Fee Report
   const doctorsList = useMemo(() => {
@@ -440,7 +498,7 @@ export default function ReportsPage({ user }) {
           <div>
             <div className="page-header">
               <div>
-                <h2>Outpatient visit Report (OPD)</h2>
+                <h2>OPD Volume Report</h2>
                 <p>Register of all patients registered under OPD clinics</p>
               </div>
               <div className="page-actions">
@@ -449,14 +507,19 @@ export default function ReportsPage({ user }) {
               </div>
             </div>
 
+            {/* Advanced Filter Panel */}
             <div className="card" style={{ marginBottom: 20, padding: 16 }}>
-              <div className="grid-2" style={{ gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 14, marginBottom: 12 }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">Search OPD Register</label>
+                  <label className="form-label">Search by ID / Name</label>
                   <div className="search-bar" style={{ width: '100%' }}>
-                    <Search />
-                    <input placeholder="Search by Doctor, Patient Name, OP No..." value={search} onChange={e => setSearch(e.target.value)} />
+                    <Search size={14}/>
+                    <input placeholder="Patient ID or Name..." value={advSearch} onChange={e => setAdvSearch(e.target.value)} />
                   </div>
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Doctor</label>
+                  <input className="form-control" placeholder="Doctor name..." value={advDoctor} onChange={e => setAdvDoctor(e.target.value)} />
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Payment Status</label>
@@ -465,6 +528,41 @@ export default function ReportsPage({ user }) {
                     <option value="Paid">Bill Paid</option>
                     <option value="Unpaid">Pending Invoices</option>
                   </select>
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Reset</label>
+                  <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => { setAdvSearch(''); setAdvDoctor(''); setAdvDate(''); setAdvDateStart(''); setAdvDateEnd(''); setFilterStatus('All'); }}>Clear</button>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <label className="form-label" style={{ margin: 0 }}>Date Filter:</label>
+                  <select className="form-control" style={{ width: 140 }} value={advDateMode} onChange={e => { setAdvDateMode(e.target.value); setAdvDate(''); setAdvDateStart(''); setAdvDateEnd(''); }}>
+                    <option value="none">No Date Filter</option>
+                    <option value="single">Specific Date</option>
+                    <option value="range">Date Range</option>
+                  </select>
+                </div>
+                {advDateMode === 'single' && (
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label">Date</label>
+                    <input type="date" className="form-control" value={advDate} onChange={e => setAdvDate(e.target.value)} />
+                  </div>
+                )}
+                {advDateMode === 'range' && (
+                  <>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">Start Date</label>
+                      <input type="date" className="form-control" value={advDateStart} onChange={e => setAdvDateStart(e.target.value)} />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">End Date</label>
+                      <input type="date" className="form-control" value={advDateEnd} onChange={e => setAdvDateEnd(e.target.value)} />
+                    </div>
+                  </>
+                )}
+                <div style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)', alignSelf: 'center' }}>
+                  Showing <strong style={{ color: 'var(--accent)' }}>{filteredOPD.length}</strong> of {opdRecords.length} records
                 </div>
               </div>
             </div>
@@ -504,7 +602,7 @@ export default function ReportsPage({ user }) {
           <div>
             <div className="page-header">
               <div>
-                <h2>Admitted Patient Report (IPD)</h2>
+                <h2>IPD Census Report</h2>
                 <p>Register of all patients currently admitted inside wards and ICUs</p>
               </div>
               <div className="page-actions">
@@ -513,12 +611,54 @@ export default function ReportsPage({ user }) {
               </div>
             </div>
 
+            {/* Advanced Filter Panel */}
             <div className="card" style={{ marginBottom: 20, padding: 16 }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Search Admitted Patients</label>
-                <div className="search-bar" style={{ width: '100%' }}>
-                  <Search />
-                  <input placeholder="Search by Patient Name, Doctor, IP No or Room..." value={search} onChange={e => setSearch(e.target.value)} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 14, marginBottom: 12 }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Search by ID / Name</label>
+                  <div className="search-bar" style={{ width: '100%' }}>
+                    <Search size={14}/>
+                    <input placeholder="Patient ID or Name..." value={advSearch} onChange={e => setAdvSearch(e.target.value)} />
+                  </div>
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Doctor</label>
+                  <input className="form-control" placeholder="Doctor name..." value={advDoctor} onChange={e => setAdvDoctor(e.target.value)} />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Reset</label>
+                  <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => { setAdvSearch(''); setAdvDoctor(''); setAdvDate(''); setAdvDateStart(''); setAdvDateEnd(''); }}>Clear</button>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <label className="form-label" style={{ margin: 0 }}>Admission Date:</label>
+                  <select className="form-control" style={{ width: 140 }} value={advDateMode} onChange={e => { setAdvDateMode(e.target.value); setAdvDate(''); setAdvDateStart(''); setAdvDateEnd(''); }}>
+                    <option value="none">No Date Filter</option>
+                    <option value="single">Specific Date</option>
+                    <option value="range">Date Range</option>
+                  </select>
+                </div>
+                {advDateMode === 'single' && (
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label">Date</label>
+                    <input type="date" className="form-control" value={advDate} onChange={e => setAdvDate(e.target.value)} />
+                  </div>
+                )}
+                {advDateMode === 'range' && (
+                  <>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">Start Date</label>
+                      <input type="date" className="form-control" value={advDateStart} onChange={e => setAdvDateStart(e.target.value)} />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">End Date</label>
+                      <input type="date" className="form-control" value={advDateEnd} onChange={e => setAdvDateEnd(e.target.value)} />
+                    </div>
+                  </>
+                )}
+                <div style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)', alignSelf: 'center' }}>
+                  Showing <strong style={{ color: 'var(--accent)' }}>{filteredIPD.length}</strong> currently admitted
                 </div>
               </div>
             </div>

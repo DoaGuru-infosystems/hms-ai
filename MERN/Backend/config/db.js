@@ -266,9 +266,33 @@ const connectDB = async () => {
           \`total_beds\` int(11) NOT NULL,
           \`available_beds\` int(11) NOT NULL,
           \`price_per_day\` int(11) NOT NULL,
+          \`floor\` int(11) NOT NULL DEFAULT 1,
+          \`building\` varchar(100) NOT NULL DEFAULT 'Main Building',
+          \`total_floors\` int(11) NOT NULL DEFAULT 5,
           \`InActive\` int(1) NOT NULL DEFAULT 0,
           \`date_entry\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
           PRIMARY KEY (\`room_id\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+
+      // Create room_category_master table
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS \`room_category_master\` (
+          \`category_id\` int(11) NOT NULL AUTO_INCREMENT,
+          \`category_name\` varchar(50) NOT NULL UNIQUE,
+          \`price_per_day\` int(11) NOT NULL,
+          PRIMARY KEY (\`category_id\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+
+      // Create building_master table
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS \`building_master\` (
+          \`building_id\` int(11) NOT NULL AUTO_INCREMENT,
+          \`building_name\` varchar(100) NOT NULL UNIQUE,
+          \`total_floors\` int(11) NOT NULL DEFAULT 5,
+          \`date_entry\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (\`building_id\`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
       `);
 
@@ -437,10 +461,17 @@ const connectDB = async () => {
           \`medication_advised\` text DEFAULT NULL,
           \`follow_up_instructions\` text DEFAULT NULL,
           \`by_user\` varchar(100) DEFAULT '',
+          \`summary_data\` longtext DEFAULT NULL,
           \`date_entry\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
           PRIMARY KEY (\`id\`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
       `);
+
+      try {
+        await connection.query('ALTER TABLE `nurse_discharge` ADD COLUMN `summary_data` LONGTEXT DEFAULT NULL');
+      } catch (err) {
+        // Column probably already exists
+      }
 
       // Create nurse_room_transfer table
       await connection.query(`
@@ -692,7 +723,17 @@ const connectDB = async () => {
           ]]
         );
       }
-
+      const [bCheck] = await connection.query('SELECT COUNT(*) as count FROM building_master');
+      if (bCheck[0].count === 0) {
+        await connection.query(`
+          INSERT INTO building_master (building_name, total_floors)
+          VALUES 
+            ('Main Building', 5),
+            ('Specialty Tower', 8),
+            ('Emergency Wing', 10),
+            ('Trauma Center', 4)
+        `);
+      }
 
       // ── PHASE 1 MIGRATIONS: add new columns to existing tables if missing ──
       const safeAlter = async (sql) => { try { await connection.query(sql); } catch(e) { /* Column already exists — skip */ } };
@@ -700,6 +741,17 @@ const connectDB = async () => {
       // users migrations
       await safeAlter(`ALTER TABLE users ADD COLUMN date_entry datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER InActive`);
       await safeAlter(`ALTER TABLE users MODIFY COLUMN title int(11) NOT NULL DEFAULT 0`);
+
+      // room_master migrations
+      await safeAlter(`ALTER TABLE room_master ADD COLUMN floor int(11) NOT NULL DEFAULT 1 AFTER price_per_day`);
+      await safeAlter(`ALTER TABLE room_master ADD COLUMN building varchar(100) NOT NULL DEFAULT 'Main Building' AFTER floor`);
+      await safeAlter(`ALTER TABLE room_master ADD COLUMN total_floors int(11) NOT NULL DEFAULT 5 AFTER building`);
+      try {
+        await connection.query(`
+          INSERT IGNORE INTO room_category_master (category_name, price_per_day)
+          SELECT DISTINCT room_type, price_per_day FROM room_master WHERE room_type != '';
+        `);
+      } catch (e) {}
 
       // ambulance_fleet migrations
       await safeAlter(`ALTER TABLE ambulance_fleet ADD COLUMN registration_no   varchar(50)  DEFAULT ''        AFTER plate`);

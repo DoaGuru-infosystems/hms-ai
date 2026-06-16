@@ -855,3 +855,282 @@ select.form-control { cursor: pointer; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--surface-border); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--primary-light); }
+
+/* ─── PREMIUM NURSING DASHBOARD THEME (SCOPE: .nurse-theme) ─── */
+.nurse-theme {
+  --nurse-primary: #3b5bdb;
+  --nurse-primary-hover: #4f46e5;
+  --nurse-bg-gradient: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  --nurse-card-bg: #ffffff;
+  --nurse-card-border: 1px solid rgba(226, 232, 240, 0.8);
+  --nurse-shadow: 0 10px 30px rgba(59, 91, 219, 0.03);
+  --nurse-shadow-hover: 0 16px 40px rgba(59, 91, 219, 0.08);
+  --nurse-input-bg: #f8fafc;
+  --nurse-input-border: 1.5px solid #e2e8f0;
+  --nurse-input-focus-border: #3b5bdb;
+  --nurse-input-focus-shadow: 0 0 0 4px rgba(59, 91, 219, 0.12);
+  --nurse-text-main: #1e293b;
+  --nurse-text-secondary: #475569;
+  --nurse-text-muted: #64748b;
+  
+  color: var(--nurse-text-main);
+  background: var(--nurse-bg-gradient);
+  min-height: calc(100vh - var(--header-h));
+  padding-bottom: 40px;
+}
+
+/* Page body custom padding and structure */
+.nurse-theme .page-body {
+  padding: 24px 32px;
+  animation: nurseFadeIn 0.4s ease;
+}
+
+@keyframes nurseFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Card overrides */
+.nurse-theme .card {
+  background: var(--nurse-card-bg) !important;
+  border: var(--nurse-card-border) !important;
+  border-radius: 16px !important;
+  padding: 24px !important;
+  box-shadow: var(--nurse-shadow) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.nurse-theme .card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--nurse-primary) 0%, #748ffc 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.nurse-theme .card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--nurse-shadow-hover) !important;
+  border-color: rgba(59, 91, 219, 0.15) !important;
+}
+
+.nurse-theme .card:hover::before {
+  opacity: 1;
+}
+
+/* Form controls */
+.nurse-theme .form-control {
+  background: var(--nurse-input-bg) !important;
+  border: var(--nurse-input-border) !important;
+  border-radius: 10px !important;
+  padding: 10px 14px !important;
+  color: var(--nurse-text-main) !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.nurse-theme .form-control:focus {
+  background: #ffffff !important;
+  border-color: var(--nurse-input-focus-border) !important;
+  box-shadow: var(--nurse-input-focus-shadow) !important;
+  outline: none !important;
+}
+
+.nurse-theme .form-label {
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: var(--nurse-text-secondary) !important;
+  margin-bottom: 6px !important;
+  letter-spacing: 0.1px !important;
+}
+
+/* Grid & Layout overrides to prevent congestion */
+.nurse-theme .grid-2 {
+  display: grid !important;
+  grid-template-columns: 1fr 1.3fr !important;
+  gap: 24px !important;
+  align-items: start !important;
+}
+
+@media (max-width: 1100px) {
+  .nurse-theme .grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+}
+
+/* Buttons */
+.nurse-theme .btn {
+  padding: 11px 22px !important;
+  border-radius: 10px !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.2px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+}
+
+.nurse-theme .btn-primary {
+  background: linear-gradient(135deg, var(--nurse-primary) 0%, var(--nurse-primary-hover) 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(59, 91, 219, 0.2) !important;
+}
+
+.nurse-theme .btn-primary:hover {
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 6px 20px rgba(59, 91, 219, 0.3) !important;
+}
+
+.nurse-theme .btn-secondary {
+  background: #ffffff !important;
+  border: 1.5px solid #e2e8f0 !important;
+  color: var(--nurse-text-secondary) !important;
+}
+
+.nurse-theme .btn-secondary:hover {
+  border-color: var(--nurse-primary) !important;
+  color: var(--nurse-primary) !important;
+  background: rgba(59, 91, 219, 0.04) !important;
+}
+
+.nurse-theme .btn-sm {
+  padding: 8px 14px !important;
+  font-size: 12px !important;
+  border-radius: 8px !important;
+}
+
+/* Tables */
+.nurse-theme .table-wrapper {
+  border-radius: 12px !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  overflow: hidden !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.01) !important;
+}
+
+.nurse-theme table {
+  background: #ffffff !important;
+  width: 100% !important;
+}
+
+.nurse-theme thead th {
+  background: #f8fafc !important;
+  color: var(--nurse-text-secondary) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.8px !important;
+  padding: 12px 14px !important;
+  border-bottom: 1.5px solid #edf2f7 !important;
+}
+
+.nurse-theme tbody tr {
+  border-bottom: 1px solid #edf2f7 !important;
+  transition: all 0.15s ease !important;
+}
+
+.nurse-theme tbody tr:hover {
+  background: rgba(59, 91, 219, 0.02) !important;
+}
+
+.nurse-theme tbody td {
+  padding: 12px 14px !important;
+  color: var(--nurse-text-secondary) !important;
+  font-size: 13.5px !important;
+}
+
+/* Search Bar styling */
+.nurse-theme .search-bar {
+  background: var(--nurse-input-bg) !important;
+  border: var(--nurse-input-border) !important;
+  border-radius: 10px !important;
+  padding: 10px 16px !important;
+  transition: all 0.2s ease !important;
+}
+
+.nurse-theme .search-bar:focus-within {
+  background: #ffffff !important;
+  border-color: var(--nurse-primary) !important;
+  box-shadow: var(--nurse-input-focus-shadow) !important;
+}
+
+.nurse-theme .search-bar input {
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+}
+
+/* Section Titles */
+.nurse-theme .section-title {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: var(--nurse-text-main) !important;
+  letter-spacing: -0.2px;
+}
+
+.nurse-theme .section-title span {
+  width: 4.5px !important;
+  height: 18px !important;
+  border-radius: 99px !important;
+  background: linear-gradient(180deg, var(--nurse-primary) 0%, #748ffc 100%) !important;
+}
+
+/* Modal Styling Overrides */
+.nurse-theme .modal-overlay {
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  background: rgba(15, 23, 42, 0.3) !important;
+}
+
+.nurse-theme .modal {
+  border-radius: 20px !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  overflow: hidden !important;
+}
+
+.nurse-theme .modal-header {
+  background: #ffffff !important;
+  padding: 20px 28px !important;
+}
+
+.nurse-theme .modal-header h3 {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.3px !important;
+  color: var(--nurse-text-main) !important;
+}
+
+.nurse-theme .modal-body {
+  padding: 24px 28px !important;
+}
+
+.nurse-theme .modal-footer {
+  background: #f8fafc !important;
+  padding: 16px 28px !important;
+  border-top: 1px solid #edf2f7 !important;
+}
+
+/* Beautiful custom boxes in vitals & listings */
+.nurse-theme .vital-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
+  transition: all 0.2s ease;
+}
+
+.nurse-theme .vital-box:hover {
+  background: #ffffff;
+  border-color: var(--nurse-primary);
+  box-shadow: 0 4px 12px rgba(59, 91, 219, 0.06);
+}
+

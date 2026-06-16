@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Trash2, Calendar, CheckCircle2, CheckSquare, XCircle, Edit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
@@ -20,6 +20,7 @@ export default function AppointmentsPage({ user }) {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const debounceTimer = useRef(null);
 
   // Dropdown list metadata and Rescheduling Modal state
   const [doctors, setDoctors] = useState([]);
@@ -59,8 +60,11 @@ export default function AppointmentsPage({ user }) {
     }
   };
 
+  // Debounced fetch on search change
   useEffect(() => {
-    fetchAppointments(search);
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => fetchAppointments(search), 400);
+    return () => clearTimeout(debounceTimer.current);
   }, [search]);
 
   // Fetch doctors on mount for the reschedule modal dropdown

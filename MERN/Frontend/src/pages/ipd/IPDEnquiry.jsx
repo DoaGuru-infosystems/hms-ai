@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Eye, Pill, Activity, Thermometer, FileText, ArrowLeftRight, LogOut, Loader2 } from 'lucide-react';
 import Topbar from '../../components/Topbar';
 
@@ -11,34 +11,37 @@ export default function IPDEnquiry({ user }) {
   const [activeTab, setActiveTab] = useState('info');
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
+  const debounceTimer = useRef(null);
 
-  useEffect(() => {
-    fetchIPDRecords();
+  const fetchIPDRecords = useCallback((searchVal = '', statusVal = 'All') => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (searchVal) params.set('search', searchVal);
+    if (statusVal !== 'All') params.set('status', statusVal);
+    const qs = params.toString();
+    fetch(`${API_BASE}/ipd${qs ? `?${qs}` : ''}`)
+      .then(res => res.json())
+      .then(data => setRecords(Array.isArray(data) ? data : []))
+      .catch(err => { console.error('Error fetching IPD records:', err); setRecords([]); })
+      .finally(() => setLoading(false));
   }, []);
 
-  const fetchIPDRecords = () => {
-    setLoading(true);
-    fetch(`${API_BASE}/ipd`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setRecords(data);
-        } else {
-          setRecords([]);
-        }
-      })
-      .catch(err => {
-        console.error('Error fetching IPD records:', err);
-        setRecords([]);
-      })
-      .finally(() => setLoading(false));
-  };
+  // Poll every 10s (unfiltered, background refresh)
+  useEffect(() => {
+    fetchIPDRecords();
+    const interval = setInterval(() => fetchIPDRecords(), 10000);
+    return () => clearInterval(interval);
+  }, [fetchIPDRecords]);
 
-  const filtered = records.filter(r => {
-    const matchSearch = `${r.patientName || ''} ${r.ioId || ''} ${r.doctor || ''} ${r.department || ''}`.toLowerCase().includes(search.toLowerCase());
-    const matchTab = tab === 'All' || r.status === tab;
-    return matchSearch && matchTab;
-  });
+  // Debounced search/tab re-fetch
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => fetchIPDRecords(search, tab), 400);
+    return () => clearTimeout(debounceTimer.current);
+  }, [search, tab, fetchIPDRecords]);
+
+  // records already backend-filtered
+  const filtered = records;
 
   const clinicalTabs = [
     { key:'info', label:'Patient Info', icon: FileText },
@@ -73,13 +76,29 @@ export default function IPDEnquiry({ user }) {
           ) : (
             <div className="table-wrapper">
               <table>
-                <thead><tr><th>IPD No.</th><th>Patient</th><th>Doctor</th><th>Dept.</th><th>Admitted</th><th>Room/Bed</th><th>Diagnosis</th><th>Status</th><th></th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>IPD No.</th>
+                    <th>Patient</th>
+                    <th>Doctor</th>
+                    <th>Dept.</th>
+                    <th>Admitted</th>
+                    <th>Discharged</th>
+                    <th>Room/Bed</th>
+                    <th>Diagnosis</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
                 <tbody>{filtered.map(r => (
                   <tr key={r.id}>
                     <td style={{ fontFamily:'monospace', color:'var(--accent-light)' }}>{r.ioId}</td>
                     <td><div style={{ fontWeight:600 }}>{r.patientName}</div><div style={{ fontSize:11, color:'var(--text-muted)' }}>{r.patientNo}</div></td>
                     <td>{r.doctor}</td><td>{r.department}</td>
                     <td style={{ fontSize:12 }}>{r.dateAdmit}</td>
+                    <td style={{ fontSize:12, color: r.dischargeDate ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                      {r.dischargeDate || '—'}
+                    </td>
                     <td style={{ fontFamily:'monospace', fontSize:12 }}>{r.room} / {r.bed}</td>
                     <td style={{ fontSize:12, maxWidth:140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.diagnosis}</td>
                     <td><span className={`badge ${r.status==='Admitted'?'badge-info':'badge-success'}`}>{r.status}</span></td>
@@ -87,7 +106,7 @@ export default function IPDEnquiry({ user }) {
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={9} className="empty-state">No IPD records found</td></tr>
+                  <tr><td colSpan={10} className="empty-state">No IPD records found</td></tr>
                 )}
                 </tbody>
               </table>
@@ -159,7 +178,7 @@ export default function IPDEnquiry({ user }) {
                 {activeTab === 'discharge' && (
                   <div>
                     {selected.status === 'Discharged' ? (
-                      <div>{[['Discharge Date',selected.dateAdmit],['Final Diagnosis',selected.diagnosis],['Condition at Discharge','Improved'],['Doctor',selected.doctor]].map(([k,v]) => (
+                      <div>{[['Discharge Date',selected.dischargeDate || '—'],['Final Diagnosis',selected.diagnosis],['Condition at Discharge','Improved'],['Doctor',selected.doctor]].map(([k,v]) => (
                         <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid var(--border)' }}>
                           <span style={{ color:'var(--text-secondary)', fontSize:13 }}>{k}</span><span style={{ fontWeight:600 }}>{v}</span>
                         </div>

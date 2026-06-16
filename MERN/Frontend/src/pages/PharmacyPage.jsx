@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Plus, AlertTriangle, FileText, CheckCircle2, TrendingDown, RefreshCw } from 'lucide-react';
 import Topbar from '../components/Topbar';
 
@@ -10,6 +10,8 @@ export default function PharmacyPage({ user }) {
   const [medicinesList, setMedicinesList] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loadingSearch, setLoadingSearch] = useState(false);
+  const debounceTimer = useRef(null);
 
   // New drug state
   const [newMed, setNewMed] = useState({
@@ -61,25 +63,28 @@ export default function PharmacyPage({ user }) {
 
   const [selectedQuote, setSelectedQuote] = useState(quotes[0]);
 
-  useEffect(() => {
-    fetchMedicines();
-  }, []);
-
-  const fetchMedicines = () => {
-    fetch(`${API_BASE}/medicines`)
+  const fetchMedicines = useCallback((searchVal) => {
+    setLoadingSearch(true);
+    const qs = searchVal ? `?search=${encodeURIComponent(searchVal)}` : '';
+    fetch(`${API_BASE}/medicines${qs}`)
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) {
-          setMedicinesList(data);
-        } else {
-          setMedicinesList([]);
-        }
+        if (Array.isArray(data)) setMedicinesList(data);
+        else setMedicinesList([]);
       })
       .catch(err => {
         console.log('Failed to fetch pharmacy inventory.', err);
         setMedicinesList([]);
-      });
-  };
+      })
+      .finally(() => setLoadingSearch(false));
+  }, []);
+
+  // Debounced search
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => fetchMedicines(search), 400);
+    return () => clearTimeout(debounceTimer.current);
+  }, [search, fetchMedicines]);
 
   const handleAddMed = async (e) => {
     e.preventDefault();
@@ -123,9 +128,8 @@ export default function PharmacyPage({ user }) {
     }
   };
 
-  const filtered = medicinesList.filter(m =>
-    `${m.name} ${m.category} ${m.type}`.toLowerCase().includes(search.toLowerCase())
-  );
+  // medicinesList is already backend-filtered; use directly
+  const filtered = medicinesList;
 
   return (
     <div>

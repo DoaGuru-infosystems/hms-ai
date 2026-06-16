@@ -38,7 +38,7 @@ export default function NursePatientHistory({ user }) {
   const patientIPD = selected ? ipdList.filter(r => r.patientNo === selected.patientNo) : [];
 
   return (
-    <div>
+    <div className="nurse-theme">
       <Topbar title="Nurse — Patient History" user={user?.name} />
       <div className="page-body">
         <div className="page-header"><div><h2>Patient History</h2><p>View complete clinical history of any patient</p></div></div>

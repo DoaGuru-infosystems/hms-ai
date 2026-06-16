@@ -6,7 +6,23 @@ const getTodayDate = () => new Date().toISOString().split('T')[0];
 
 exports.getAllBills = async (req, res, next) => {
   try {
+    const { search, status } = req.query;
+
     if (isMysqlConnected()) {
+      let conditions = [];
+      let params = [];
+
+      if (search) {
+        conditions.push(`(CONCAT(p.firstname, ' ', p.lastname) LIKE ? OR b.bill_no LIKE ? OR b.payment_method LIKE ?)`);
+        const s = `%${search}%`;
+        params.push(s, s, s);
+      }
+      if (status && status !== 'All') {
+        conditions.push(`b.status = ?`);
+        params.push(status);
+      }
+
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
       const rows = await db.query(`
         SELECT 
           b.bill_id as id,
@@ -22,11 +38,22 @@ exports.getAllBills = async (req, res, next) => {
           b.status
         FROM billing_records b
         LEFT JOIN patient_personal_info p ON b.patient_no = p.patient_no
+        ${whereClause}
         ORDER BY b.bill_date DESC, b.bill_id DESC
-      `);
+      `, params);
       return res.json(rows);
     } else {
-      return res.json(dbJson.getBills());
+      let bills = dbJson.getBills();
+      if (search) {
+        const s = search.toLowerCase();
+        bills = bills.filter(b =>
+          `${b.invoiceNo || ''} ${b.patientName || ''} ${b.paymentType || ''}`.toLowerCase().includes(s)
+        );
+      }
+      if (status && status !== 'All') {
+        bills = bills.filter(b => b.status === status);
+      }
+      return res.json(bills);
     }
   } catch (error) {
     next(error);

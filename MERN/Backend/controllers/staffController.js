@@ -57,7 +57,19 @@ async function getOrCreateDesignationId(designationName) {
 
 exports.getAllStaff = async (req, res, next) => {
   try {
+    const { search } = req.query;
+
     if (isMysqlConnected()) {
+      let conditions = ['u.InActive = 0'];
+      let params = [];
+
+      if (search) {
+        conditions.push(`(CONCAT(u.firstname, ' ', u.lastname) LIKE ? OR dept.dept_name LIKE ? OR u.email_address LIKE ?)`);
+        const s = `%${search}%`;
+        params.push(s, s, s);
+      }
+
+      const whereClause = `WHERE ${conditions.join(' AND ')}`;
       const rows = await db.query(`
         SELECT 
           u.user_id as id,
@@ -74,9 +86,9 @@ exports.getAllStaff = async (req, res, next) => {
           u.InActive
         FROM users u
         LEFT JOIN department dept ON u.department = dept.department_id
-        WHERE u.InActive = 0
+        ${whereClause}
         ORDER BY u.firstname ASC
-      `);
+      `, params);
 
       let designationMap = {};
       try {
@@ -110,7 +122,14 @@ exports.getAllStaff = async (req, res, next) => {
 
       return res.json(users);
     } else {
-      return res.json(dbJson.getUsers().filter(u => u.status !== 'Inactive'));
+      let users = dbJson.getUsers().filter(u => u.status !== 'Inactive');
+      if (search) {
+        const s = search.toLowerCase();
+        users = users.filter(u =>
+          `${u.firstName || ''} ${u.lastName || ''} ${u.role || ''} ${u.department || ''}`.toLowerCase().includes(s)
+        );
+      }
+      return res.json(users);
     }
   } catch (error) {
     next(error);

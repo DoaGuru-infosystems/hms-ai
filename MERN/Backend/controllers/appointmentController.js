@@ -55,8 +55,13 @@ exports.getAllAppointments = async (req, res, next) => {
       }
       
       if (doctorId) {
-        conditions.push(`a.consultantDoctor = ?`);
-        params.push(doctorId);
+        let doctorIds = [doctorId];
+        if (doctorId === '00007' || doctorId === 'EMP-007') doctorIds = ['00007', 'EMP-007'];
+        else if (doctorId === '00008' || doctorId === 'EMP-008') doctorIds = ['00008', 'EMP-008'];
+        else if (doctorId === '00011' || doctorId === 'EMP-011') doctorIds = ['00011', 'EMP-011', '17', 17];
+        
+        conditions.push(`a.consultantDoctor IN (?)`);
+        params.push(doctorIds);
       }
       
       if (date) {
@@ -98,7 +103,11 @@ exports.getAllAppointments = async (req, res, next) => {
         );
       }
       if (doctorId) {
-        appointments = appointments.filter(a => String(a.doctorId) === String(doctorId));
+        let doctorIds = [doctorId];
+        if (doctorId === '00007' || doctorId === 'EMP-007') doctorIds = ['00007', 'EMP-007'];
+        else if (doctorId === '00008' || doctorId === 'EMP-008') doctorIds = ['00008', 'EMP-008'];
+        else if (doctorId === '00011' || doctorId === 'EMP-011') doctorIds = ['00011', 'EMP-011'];
+        appointments = appointments.filter(a => doctorIds.map(String).includes(String(a.doctorId)));
       }
       if (date) {
         appointments = appointments.filter(a => a.date === date);

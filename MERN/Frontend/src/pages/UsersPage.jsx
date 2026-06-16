@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Search, Plus, Edit2, Trash2, Shield, UserPlus, Key, ClipboardList, Check, Loader2, X } from 'lucide-react';
 import Topbar from '../components/Topbar';
@@ -30,6 +30,7 @@ export default function UsersPage({ user }) {
   const [usersList, setUsersList] = useState([]);
   const [deptsList, setDeptsList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const debounceTimer = useRef(null);
   
   // Registration form states
   const [empNo, setEmpNo] = useState('EMP-101');
@@ -55,11 +56,24 @@ export default function UsersPage({ user }) {
   const [editPhone, setEditPhone] = useState('');
   const [editPassword, setEditPassword] = useState('');
 
-  useEffect(() => {
-    fetchData();
+  const fetchUsers = useCallback((searchVal = '') => {
+    setLoading(true);
+    const qs = searchVal ? `?search=${encodeURIComponent(searchVal)}` : '';
+    fetch(`http://localhost:5001/api/users${qs}`)
+      .then(res => res.json())
+      .then(data => { if (Array.isArray(data)) setUsersList(data); })
+      .catch(err => console.error('Error fetching users:', err))
+      .finally(() => setLoading(false));
   }, []);
 
-  const fetchData = async () => {
+  // Debounced search
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => fetchUsers(search), 400);
+    return () => clearTimeout(debounceTimer.current);
+  }, [search, fetchUsers]);
+
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [usersRes, deptsRes] = await Promise.all([
@@ -84,13 +98,10 @@ export default function UsersPage({ user }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const filtered = useMemo(() => {
-    return usersList.filter(u =>
-      `${u.firstName || ''} ${u.lastName || ''} ${u.role || ''} ${u.department || ''}`.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [usersList, search]);
+  // usersList is already filtered from backend; use directly
+  const filtered = usersList;
 
   const handleRegister = (e) => {
     e.preventDefault();

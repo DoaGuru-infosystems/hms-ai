@@ -147,6 +147,58 @@ exports.createMedication = async (req, res, next) => {
   }
 };
 
+// Update Medication Record
+exports.updateMedication = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { medName, medicineName, dose, dosage, route, freq, frequency, status, by } = req.body;
+
+    const medNameVal = medName || medicineName;
+    const doseVal = dose || dosage;
+    const routeVal = route;
+    const freqVal = freq || frequency;
+    const statusVal = status;
+    const byVal = by || '';
+
+    if (!id) return res.status(400).json({ error: 'id is required' });
+
+    if (isMysqlConnected()) {
+      // Build dynamic SET clause so we only update provided fields
+      const sets = [];
+      const params = [];
+      if (medNameVal !== undefined) { sets.push('med_name = ?'); params.push(medNameVal); }
+      if (doseVal   !== undefined) { sets.push('dose = ?');     params.push(doseVal); }
+      if (routeVal  !== undefined) { sets.push('route = ?');    params.push(routeVal); }
+      if (freqVal   !== undefined) { sets.push('freq = ?');     params.push(freqVal); }
+      if (statusVal !== undefined) { sets.push('status = ?');   params.push(statusVal); }
+      if (byVal)                   { sets.push('by_user = ?');  params.push(byVal); }
+
+      if (sets.length === 0) return res.status(400).json({ error: 'No fields to update' });
+
+      params.push(id);
+      await db.query(`UPDATE nurse_medication SET ${sets.join(', ')} WHERE id = ?`, params);
+      return res.json({ message: 'Medication updated successfully' });
+    } else {
+      const data = dbJson.getNurseMedication();
+      const idx = data.findIndex(r => String(r.id) === String(id));
+      if (idx === -1) return res.status(404).json({ error: 'Record not found' });
+      data[idx] = {
+        ...data[idx],
+        ...(medNameVal !== undefined && { medName: medNameVal }),
+        ...(doseVal    !== undefined && { dose: doseVal }),
+        ...(routeVal   !== undefined && { route: routeVal }),
+        ...(freqVal    !== undefined && { freq: freqVal }),
+        ...(statusVal  !== undefined && { status: statusVal }),
+        ...(byVal      && { by: byVal }),
+      };
+      dbJson.saveNurseMedication(data);
+      return res.json(data[idx]);
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Intake Output
 exports.getIntakeOutput = async (req, res, next) => {
   try {
@@ -352,20 +404,34 @@ exports.getDischarge = async (req, res, next) => {
   try {
     const { patientNo } = req.query;
     if (isMysqlConnected()) {
-      let q = 'SELECT id, patient, discharge_date as dischargeDate, condition_at_discharge as conditionAtDischarge, medication_advised as medicationAdvised, follow_up_instructions as followUpInstructions, by_user as `by`, date_entry as date FROM nurse_discharge';
+      let q = 'SELECT id, patient, discharge_date as dischargeDate, condition_at_discharge as conditionAtDischarge, medication_advised as medicationAdvised, follow_up_instructions as followUpInstructions, by_user as `by`, summary_data as summaryData, date_entry as date FROM nurse_discharge';
       const params = [];
       if (patientNo) {
         q += ' WHERE patient = ?';
         params.push(patientNo);
       }
       const rows = await db.query(q, params);
-      return res.json(rows);
+      return res.json(rows.map(r => {
+        let parsed = null;
+        try {
+          if (r.summaryData) {
+            parsed = typeof r.summaryData === 'string' ? JSON.parse(r.summaryData) : r.summaryData;
+          }
+        } catch (e) {
+          console.error('Failed to parse summaryData:', e);
+        }
+        return {
+          ...r,
+          summaryData: parsed
+        };
+      }));
     } else {
       let data = dbJson.getNurseDischarge();
       if (patientNo) data = data.filter(d => d.patient === patientNo);
       return res.json(data.map(d => ({
         ...d,
-        date: d.date || d.date_entry
+        date: d.date || d.date_entry,
+        summaryData: d.summaryData || null
       })));
     }
   } catch (error) {
@@ -375,44 +441,103 @@ exports.getDischarge = async (req, res, next) => {
 
 exports.createDischarge = async (req, res, next) => {
   try {
-    const { patient, dischargeDate, conditionAtDischarge, medicationAdvised, followUpInstructions, by } = req.body;
+    const { patient, dischargeDate, conditionAtDischarge, medicationAdvised, followUpInstructions, by, summaryData } = req.body;
     const patientVal = patient || req.body.patientNo;
     if (!patientVal) return res.status(400).json({ error: 'patient is required' });
 
+    let resolvedPatientNo = null;
+    let resolvedIpdId = null;
+
     if (isMysqlConnected()) {
+      // First try to find by patient_no in admitted admissions
+      let ipdRec = await db.query('SELECT patient_no, ipdId FROM ipd_admissions WHERE patient_no = ? AND status = "Admitted"', [patientVal]);
+      if (ipdRec.length === 0) {
+        // Find by ipdId
+        ipdRec = await db.query('SELECT patient_no, ipdId FROM ipd_admissions WHERE ipdId = ?', [patientVal]);
+      }
+      if (ipdRec.length === 0) {
+        // Find by patient_no generally
+        ipdRec = await db.query('SELECT patient_no, ipdId FROM ipd_admissions WHERE patient_no = ? ORDER BY admitDate DESC LIMIT 1', [patientVal]);
+      }
+      
+      if (ipdRec.length > 0) {
+        resolvedPatientNo = ipdRec[0].patient_no;
+        resolvedIpdId = ipdRec[0].ipdId;
+      } else {
+        // Fallback: see if it's a patient_no in personal info
+        const pat = await db.query('SELECT patient_no FROM patient_personal_info WHERE patient_no = ?', [patientVal]);
+        if (pat.length > 0) {
+          resolvedPatientNo = pat[0].patient_no;
+        } else {
+          resolvedPatientNo = patientVal; // final fallback
+        }
+      }
+
       await db.query(`
         INSERT INTO nurse_discharge 
-          (patient, discharge_date, condition_at_discharge, medication_advised, follow_up_instructions, by_user, date_entry)
-        VALUES (?, ?, ?, ?, ?, ?, NOW())
-      `, [patientVal, dischargeDate || '', conditionAtDischarge || '', medicationAdvised || '', followUpInstructions || '', by || '']);
+          (patient, discharge_date, condition_at_discharge, medication_advised, follow_up_instructions, by_user, summary_data, date_entry)
+        VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+      `, [
+        resolvedPatientNo, 
+        dischargeDate || '', 
+        conditionAtDischarge || '', 
+        medicationAdvised || '', 
+        followUpInstructions || '', 
+        by || '', 
+        summaryData ? JSON.stringify(summaryData) : null
+      ]);
 
       // Auto update status in IPD and OPD
-      await db.query('UPDATE ipd_admissions SET status = "Discharged" WHERE patient_no = ? AND status = "Admitted"', [patientVal]);
-      await db.query('UPDATE opd_records SET status = "Discharged" WHERE patient_no = ? AND status = "Active"', [patientVal]);
+      if (resolvedIpdId) {
+        await db.query('UPDATE ipd_admissions SET status = "Discharged" WHERE ipdId = ?', [resolvedIpdId]);
+      } else {
+        await db.query('UPDATE ipd_admissions SET status = "Discharged" WHERE patient_no = ? AND status = "Admitted"', [resolvedPatientNo]);
+      }
+      await db.query('UPDATE opd_records SET status = "Discharged" WHERE patient_no = ? AND status = "Active"', [resolvedPatientNo]);
 
       return res.status(201).json({ message: 'Discharge sign-off successfully filed' });
     } else {
+      const ipd = dbJson.getIpdRecords();
+      let ipdRec = ipd.find(i => i.patientNo === patientVal && i.status === 'Admitted');
+      if (!ipdRec) {
+        ipdRec = ipd.find(i => i.id === patientVal || i.ipdId === patientVal);
+      }
+      if (!ipdRec) {
+        ipdRec = ipd.filter(i => i.patientNo === patientVal).sort((a, b) => new Date(b.admitDate || b.dateAdmit || 0) - new Date(a.admitDate || a.dateAdmit || 0))[0];
+      }
+
+      if (ipdRec) {
+        resolvedPatientNo = ipdRec.patientNo;
+        resolvedIpdId = ipdRec.ipdId || ipdRec.id;
+      } else {
+        resolvedPatientNo = patientVal;
+      }
+
       const data = dbJson.getNurseDischarge();
       const newRec = {
         id: (data.length + 1).toString(),
-        patient: patientVal,
+        patient: resolvedPatientNo,
         dischargeDate, conditionAtDischarge, medicationAdvised, followUpInstructions,
         by,
+        summaryData: summaryData || null,
         date: new Date().toISOString()
       };
       data.push(newRec);
       dbJson.saveNurseDischarge(data);
 
       // Auto update status in IPD and OPD JSON DB
-      const ipd = dbJson.getIpdRecords();
       ipd.forEach(i => {
-        if (i.patientNo === patientVal && i.status === 'Admitted') i.status = 'Discharged';
+        if (resolvedIpdId) {
+          if (i.id === resolvedIpdId || i.ipdId === resolvedIpdId) i.status = 'Discharged';
+        } else {
+          if (i.patientNo === resolvedPatientNo && i.status === 'Admitted') i.status = 'Discharged';
+        }
       });
       dbJson.saveIpdRecords(ipd);
 
       const opd = dbJson.getOpdRecords();
       opd.forEach(o => {
-        if (o.patientNo === patientVal && o.status === 'Active') o.status = 'Discharged';
+        if (o.patientNo === resolvedPatientNo && o.status === 'Active') o.status = 'Discharged';
       });
       dbJson.saveOpdRecords(opd);
 

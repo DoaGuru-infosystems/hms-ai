@@ -4,9 +4,47 @@ const dbJson = require('../config/dbJson');
 const isMysqlConnected = () => db.getDbType() === 'mysql';
 const getTodayDate = () => new Date().toISOString().split('T')[0];
 
+
+
 exports.getAllPatients = async (req, res, next) => {
   try {
+    const { search, name, patientNo, age, date, startDate, endDate } = req.query;
+
     if (isMysqlConnected()) {
+      let conditions = ['p.InActive = 0'];
+      let params = [];
+
+      if (search) {
+        conditions.push(`(CONCAT(p.firstname, ' ', p.lastname) LIKE ? OR p.patient_no LIKE ? OR p.phone_no LIKE ?)`);
+        const s = `%${search}%`;
+        params.push(s, s, s);
+      }
+      if (name) {
+        conditions.push(`CONCAT(p.firstname, ' ', p.lastname) LIKE ?`);
+        params.push(`%${name}%`);
+      }
+      if (patientNo) {
+        conditions.push(`p.patient_no LIKE ?`);
+        params.push(`%${patientNo}%`);
+      }
+      if (age) {
+        conditions.push(`p.age = ?`);
+        params.push(parseInt(age));
+      }
+      if (date) {
+        conditions.push(`DATE(p.date_entry) = ?`);
+        params.push(date);
+      }
+      if (startDate) {
+        conditions.push(`DATE(p.date_entry) >= ?`);
+        params.push(startDate);
+      }
+      if (endDate) {
+        conditions.push(`DATE(p.date_entry) <= ?`);
+        params.push(endDate);
+      }
+
+      const whereClause = `WHERE ${conditions.join(' AND ')}`;
       const rows = await db.query(`
         SELECT 
           p.patient_no as id,
@@ -26,9 +64,9 @@ exports.getAllPatients = async (req, res, next) => {
           ) as status,
           p.InActive
         FROM patient_personal_info p
-        WHERE p.InActive = 0
+        ${whereClause}
         ORDER BY p.firstname ASC
-      `);
+      `, params);
       return res.json(rows.map(r => ({
         ...r,
         bloodGroup: r.bloodGroup || 'O+',
@@ -37,8 +75,47 @@ exports.getAllPatients = async (req, res, next) => {
         status: r.status || 'Active'
       })));
     } else {
-      const patients = dbJson.getPatients().filter(p => p.status !== 'Inactive');
-      return res.json(patients);
+      let patients = dbJson.getPatients().filter(p => p.status !== 'Inactive');
+      const ipdRecords = dbJson.getIpdRecords();
+
+      if (search) {
+        const s = search.toLowerCase();
+        patients = patients.filter(p =>
+          `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase().includes(s) ||
+          (p.patientNo || '').toLowerCase().includes(s) ||
+          (p.phone || '').includes(s)
+        );
+      }
+      if (name) {
+        const n = name.toLowerCase();
+        patients = patients.filter(p =>
+          `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase().includes(n)
+        );
+      }
+      if (patientNo) {
+        patients = patients.filter(p => (p.patientNo || '').toLowerCase().includes(patientNo.toLowerCase()));
+      }
+      if (age) {
+        patients = patients.filter(p => String(p.age) === String(age));
+      }
+      if (date) {
+        patients = patients.filter(p => (p.dateEntry || '').startsWith(date));
+      }
+      if (startDate) {
+        patients = patients.filter(p => (p.dateEntry || '') >= startDate);
+      }
+      if (endDate) {
+        patients = patients.filter(p => (p.dateEntry || '') <= endDate);
+      }
+
+      const mapped = patients.map(p => {
+        const patientIpd = ipdRecords
+          .filter(i => i.patientNo === p.patientNo)
+          .sort((a, b) => new Date(b.admitDate || b.dateAdmit || 0) - new Date(a.admitDate || a.dateAdmit || 0));
+        const latestStatus = patientIpd[0]?.status || 'Active';
+        return { ...p, status: latestStatus };
+      });
+      return res.json(mapped);
     }
   } catch (error) {
     next(error);
@@ -114,7 +191,15 @@ exports.updatePatient = async (req, res, next) => {
     const patientId = req.params.id;
 
     if (isMysqlConnected()) {
-      const checkRows = await db.query('SELECT patient_no FROM patient_personal_info WHERE patient_no = ?', [patientId]);
+      const checkRows = await db.query(`
+        SELECT p.patient_no,
+        COALESCE(
+          (SELECT status FROM ipd_admissions WHERE patient_no = p.patient_no ORDER BY admitDate DESC, ipdId DESC LIMIT 1),
+          'Active'
+        ) as status
+        FROM patient_personal_info p WHERE p.patient_no = ?
+      `, [patientId]);
+      
       if (checkRows.length === 0) {
         return res.status(404).json({ error: 'Patient not found' });
       }
@@ -152,7 +237,7 @@ exports.updatePatient = async (req, res, next) => {
         phone: phone || '',
         email: email || '',
         address: address || '',
-        status: 'Active'
+        status: checkRows[0]?.status || 'Active'
       });
     } else {
       const patients = dbJson.getPatients();
@@ -160,6 +245,12 @@ exports.updatePatient = async (req, res, next) => {
       if (idx === -1) {
         return res.status(404).json({ error: 'Patient not found' });
       }
+
+      const ipdRecords = dbJson.getIpdRecords();
+      const patientIpd = ipdRecords
+        .filter(i => i.patientNo === patientId || i.patientNo === patients[idx].patientNo)
+        .sort((a, b) => new Date(b.admitDate || b.dateAdmit || 0) - new Date(a.admitDate || a.dateAdmit || 0));
+      const latestStatus = patientIpd[0]?.status || 'Active';
 
       const updatedPatient = {
         ...patients[idx],
@@ -170,7 +261,8 @@ exports.updatePatient = async (req, res, next) => {
         bloodGroup: bloodGroup || 'O+',
         phone: phone || '',
         email: email || '',
-        address: address || ''
+        address: address || '',
+        status: latestStatus
       };
 
       patients[idx] = updatedPatient;

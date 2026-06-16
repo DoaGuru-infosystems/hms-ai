@@ -81,6 +81,13 @@ const initialMedicines = [
   { id: '6', name: 'IBUPROFEN 400mg', category: 'Pharmacy', type: 'Generic', uom: 'Tablet', price: 8, stock: 12000, reorder: 500, status: 'In Stock' }
 ];
 
+const initialCategories = [
+  { name: 'General Ward', rate: 150 },
+  { name: 'Executive Deluxe', rate: 1500 },
+  { name: 'Operation Theater', rate: 500 },
+  { name: 'ICU', rate: 3000 }
+];
+
 // Ensure Data Directory Exists
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -99,6 +106,16 @@ initFile('users.json', initialUsers);
 initFile('departments.json', initialDepartments);
 initFile('appointments.json', initialAppointments);
 initFile('rooms.json', initialRooms);
+initFile('room_categories.json', initialCategories);
+
+const initialBuildings = [
+  { id: '1', name: 'Main Building', totalFloors: 5 },
+  { id: '2', name: 'Specialty Tower', totalFloors: 8 },
+  { id: '3', name: 'Emergency Wing', totalFloors: 10 },
+  { id: '4', name: 'Trauma Center', totalFloors: 4 }
+];
+initFile('buildings.json', initialBuildings);
+
 initFile('bills.json', initialBills);
 initFile('opd.json', initialOpd);
 initFile('ipd.json', initialIpd);
@@ -187,5 +204,11 @@ module.exports = {
   savePatientLabs: (data) => writeData('patient_labs.json', data),
 
   getPatientOperations: () => readData('patient_operations.json'),
-  savePatientOperations: (data) => writeData('patient_operations.json', data)
+  savePatientOperations: (data) => writeData('patient_operations.json', data),
+
+  getRoomCategories: () => readData('room_categories.json'),
+  saveRoomCategories: (data) => writeData('room_categories.json', data),
+
+  getBuildings: () => readData('buildings.json'),
+  saveBuildings: (data) => writeData('buildings.json', data)
 };

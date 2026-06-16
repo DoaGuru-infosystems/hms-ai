@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FileText, Loader2 } from 'lucide-react';
 import Topbar from '../../components/Topbar';
+import ClockTimePicker from '../../components/ClockTimePicker';
 
 const API_BASE = 'http://localhost:5001/api';
 
@@ -789,12 +790,11 @@ export default function DoctorIPD({ user }) {
                             />
                           </div>
                           <div className="form-group">
-                            <label className="form-label">Time</label>
-                            <input 
-                              type="time" 
-                              className="form-control" 
+                            <ClockTimePicker
+                              label="Time"
                               value={opTime}
-                              onChange={e => setOpTime(e.target.value)}
+                              onChange={val => setOpTime(val)}
+                              className="form-group"
                             />
                           </div>
                         </div>

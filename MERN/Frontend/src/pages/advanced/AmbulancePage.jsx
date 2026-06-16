@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, MapPin, Truck, CheckCircle2, Navigation, Phone, User, Plus, X, AlertCircle } from 'lucide-react';
 import Topbar from '../../components/Topbar';
 import { api } from '../../utils/api';
@@ -12,7 +12,9 @@ export default function AmbulancePage({ user }) {
   const [showAddVehicle, setShowAddVehicle] = useState(false);
   const [loading, setLoading]     = useState(false);
   const [search, setSearch]       = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [error, setError]         = useState('');
+  const debounceTimer = useRef(null);
 
   const [dispatchForm, setDispatchForm] = useState({
     patientName:'', patientNo:'', callerName:'', phone:'', pickup:'', vehicleId:'', severity:'Medium', etaMinutes:''
@@ -26,6 +28,13 @@ export default function AmbulancePage({ user }) {
   const fetchDispatches= () => api.get('/ambulance/dispatch').then(setDispatches).catch(()=>setDispatches([]));
 
   useEffect(() => { fetchFleet(); fetchDispatches(); }, []);
+
+  // Debounce search input
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(debounceTimer.current);
+  }, [search]);
 
   // Patient search
   const searchPatients = async (q) => {
@@ -78,8 +87,8 @@ export default function AmbulancePage({ user }) {
   const dispatched  = fleet.filter(v=>v.status==='Dispatched');
   const activeDisps = dispatches.filter(d=>['Active','Picked Up','Arrived'].includes(d.status));
 
-  const filteredFleet = fleet.filter(v=>`${v.vehicle_id}${v.driver}${v.plate}`.toLowerCase().includes(search.toLowerCase()));
-  const filteredDisp  = dispatches.filter(d=>`${d.dispatch_id}${d.patient_name}${d.pickup_location}`.toLowerCase().includes(search.toLowerCase()));
+  const filteredFleet = useMemo(() => fleet.filter(v=>`${v.vehicle_id}${v.driver}${v.plate}`.toLowerCase().includes(debouncedSearch.toLowerCase())), [fleet, debouncedSearch]);
+  const filteredDisp  = useMemo(() => dispatches.filter(d=>`${d.dispatch_id}${d.patient_name}${d.pickup_location}`.toLowerCase().includes(debouncedSearch.toLowerCase())), [dispatches, debouncedSearch]);
 
   return (
     <div>
