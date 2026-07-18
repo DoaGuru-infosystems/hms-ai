@@ -3,9 +3,9 @@
  * JWT-based authentication and role-based access control middleware.
  * Phase 1 — MedBrainix HMS Security Hardening
  */
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 
-const JWT_SECRET = process.env.JWT_SECRET || 'medbainix_hms_secret_2026_xK9!qZ';
+const JWT_SECRET = process.env.JWT_SECRET || "medbainix_hms_secret_2026_xK9!qZ";
 
 /**
  * protect — verifies JWT from Authorization header.
@@ -14,35 +14,43 @@ const JWT_SECRET = process.env.JWT_SECRET || 'medbainix_hms_secret_2026_xK9!qZ';
  */
 module.exports = {
   protect: (req, res, next) => {
-    const authHeader = req.headers['authorization'];
+    const authHeader = req.headers["authorization"];
 
     // ── JWT path (new standard) ──
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
       try {
         const decoded = jwt.verify(token, JWT_SECRET);
         req.user = {
-          id:   decoded.id   || decoded.sub,
-          role: decoded.role || 'Guest',
-          name: decoded.name || 'Unknown',
+          id: decoded.id || decoded.sub,
+          role: decoded.role || "Guest",
+          name: decoded.name || "Unknown",
         };
         return next();
       } catch (err) {
-        return res.status(401).json({ error: 'Invalid or expired token. Please login again.' });
+        return res
+          .status(401)
+          .json({ error: "Invalid or expired token. Please login again." });
       }
     }
 
     // ── Legacy header path (backward-compatible with existing HMS modules) ──
-    const userRole = req.headers['x-user-role'];
-    const userId   = req.headers['x-user-id'];
+    const userRole = req.headers["x-user-role"];
+    const userId = req.headers["x-user-id"];
 
     if (userRole && userId) {
-      req.user = { id: userId, role: userRole, name: req.headers['x-user-name'] || 'User' };
+      req.user = {
+        id: userId,
+        role: userRole,
+        name: req.headers["x-user-name"] || "User",
+      };
       return next();
     }
 
     // ── No credentials ──
-    return res.status(401).json({ error: 'Unauthorized. Please provide a valid session token.' });
+    return res
+      .status(401)
+      .json({ error: "Unauthorized. Please provide a valid session token." });
   },
 
   /**
@@ -53,7 +61,7 @@ module.exports = {
     return (req, res, next) => {
       if (!req.user || !roles.includes(req.user.role)) {
         return res.status(403).json({
-          error: `Access Denied. Required role(s): ${roles.join(', ')}. Your role: ${req.user?.role || 'None'}`
+          error: `Access Denied. Required role(s): ${roles.join(", ")}. Your role: ${req.user?.role || "None"}`,
         });
       }
       next();
@@ -65,7 +73,7 @@ module.exports = {
    */
   signToken: (payload) => {
     return jwt.sign(payload, JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN || '8h'
+      expiresIn: process.env.JWT_EXPIRES_IN || "8h",
     });
-  }
+  },
 };

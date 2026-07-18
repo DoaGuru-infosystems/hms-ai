@@ -1,20 +1,20 @@
-const db = require('../config/db');
-const dbJson = require('../config/dbJson');
+const db = require("../config/db");
+const dbJson = require("../config/dbJson");
 
-const isMysqlConnected = () => db.getDbType() === 'mysql';
+const isMysqlConnected = () => db.getDbType() === "mysql";
 
 const MYSQL_TO_MERN_STATUS = {
-  'S': 'Scheduled',
-  'C': 'Confirmed',
-  'E': 'Completed',
-  'X': 'Cancelled'
+  S: "Scheduled",
+  C: "Confirmed",
+  E: "Completed",
+  X: "Cancelled",
 };
 
 const MERN_TO_MYSQL_STATUS = {
-  'Scheduled': 'S',
-  'Confirmed': 'C',
-  'Completed': 'E',
-  'Cancelled': 'X'
+  Scheduled: "S",
+  Confirmed: "C",
+  Completed: "E",
+  Cancelled: "X",
 };
 
 exports.getAllAppointments = async (req, res, next) => {
@@ -39,10 +39,10 @@ exports.getAllAppointments = async (req, res, next) => {
         LEFT JOIN users d ON a.consultantDoctor = d.user_id
         LEFT JOIN department dept ON d.department = dept.department_id
       `;
-      
+
       let conditions = [];
       let params = [];
-      
+
       if (search) {
         conditions.push(`(p.firstname LIKE ? 
              OR p.lastname LIKE ? 
@@ -53,41 +53,44 @@ exports.getAllAppointments = async (req, res, next) => {
         const s = `%${search}%`;
         params.push(s, s, s, s, s, s);
       }
-      
+
       if (doctorId) {
         let doctorIds = [doctorId];
-        if (doctorId === '00007' || doctorId === 'EMP-007') doctorIds = ['00007', 'EMP-007'];
-        else if (doctorId === '00008' || doctorId === 'EMP-008') doctorIds = ['00008', 'EMP-008'];
-        else if (doctorId === '00011' || doctorId === 'EMP-011') doctorIds = ['00011', 'EMP-011', '17', 17];
-        
+        if (doctorId === "00007" || doctorId === "EMP-007")
+          doctorIds = ["00007", "EMP-007"];
+        else if (doctorId === "00008" || doctorId === "EMP-008")
+          doctorIds = ["00008", "EMP-008"];
+        else if (doctorId === "00011" || doctorId === "EMP-011")
+          doctorIds = ["00011", "EMP-011", "17", 17];
+
         conditions.push(`a.consultantDoctor IN (?)`);
         params.push(doctorIds);
       }
-      
+
       if (date) {
         conditions.push(`DATE(a.appointmentDate) = ?`);
         params.push(date);
       }
 
       if (conditions.length > 0) {
-        queryStr += ` WHERE ` + conditions.join(' AND ');
+        queryStr += ` WHERE ` + conditions.join(" AND ");
       }
-      
+
       queryStr += ` ORDER BY a.appointmentDate DESC, a.appointmentTime ASC`;
 
       const rows = await db.query(queryStr, params);
-      
-      const appointments = rows.map(r => ({
+
+      const appointments = rows.map((r) => ({
         id: r.id.toString(),
         patientId: r.patientId,
-        patientName: r.patientName || 'Unknown Patient',
+        patientName: r.patientName || "Unknown Patient",
         doctorId: r.doctorId,
-        doctor: r.doctor || 'Unknown Doctor',
-        department: r.department || 'General Medicine',
+        doctor: r.doctor || "Unknown Doctor",
+        department: r.department || "General Medicine",
         date: r.date,
         time: r.time,
-        reason: r.reason || '',
-        status: MYSQL_TO_MERN_STATUS[r.rawStatus] || 'Scheduled'
+        reason: r.reason || "",
+        status: MYSQL_TO_MERN_STATUS[r.rawStatus] || "Scheduled",
       }));
 
       return res.json(appointments);
@@ -95,22 +98,28 @@ exports.getAllAppointments = async (req, res, next) => {
       let appointments = dbJson.getAppointments();
       if (search) {
         const s = search.toLowerCase();
-        appointments = appointments.filter(a => 
-          (a.patientName && a.patientName.toLowerCase().includes(s)) ||
-          (a.doctor && a.doctor.toLowerCase().includes(s)) ||
-          (a.department && a.department.toLowerCase().includes(s)) ||
-          (a.reason && a.reason.toLowerCase().includes(s))
+        appointments = appointments.filter(
+          (a) =>
+            (a.patientName && a.patientName.toLowerCase().includes(s)) ||
+            (a.doctor && a.doctor.toLowerCase().includes(s)) ||
+            (a.department && a.department.toLowerCase().includes(s)) ||
+            (a.reason && a.reason.toLowerCase().includes(s)),
         );
       }
       if (doctorId) {
         let doctorIds = [doctorId];
-        if (doctorId === '00007' || doctorId === 'EMP-007') doctorIds = ['00007', 'EMP-007'];
-        else if (doctorId === '00008' || doctorId === 'EMP-008') doctorIds = ['00008', 'EMP-008'];
-        else if (doctorId === '00011' || doctorId === 'EMP-011') doctorIds = ['00011', 'EMP-011'];
-        appointments = appointments.filter(a => doctorIds.map(String).includes(String(a.doctorId)));
+        if (doctorId === "00007" || doctorId === "EMP-007")
+          doctorIds = ["00007", "EMP-007"];
+        else if (doctorId === "00008" || doctorId === "EMP-008")
+          doctorIds = ["00008", "EMP-008"];
+        else if (doctorId === "00011" || doctorId === "EMP-011")
+          doctorIds = ["00011", "EMP-011"];
+        appointments = appointments.filter((a) =>
+          doctorIds.map(String).includes(String(a.doctorId)),
+        );
       }
       if (date) {
-        appointments = appointments.filter(a => a.date === date);
+        appointments = appointments.filter((a) => a.date === date);
       }
       return res.json(appointments);
     }
@@ -121,45 +130,55 @@ exports.getAllAppointments = async (req, res, next) => {
 
 exports.createAppointment = async (req, res, next) => {
   try {
-    const { patient, doctor, department, date, hour, minute, ampm, reason } = req.body;
-    const timeStr = `${hour.padStart(2, '0')}:${minute.padStart(2, '0')} ${ampm}`;
+    const { patient, doctor, department, date, hour, minute, ampm, reason } =
+      req.body;
+    const timeStr = `${hour.padStart(2, "0")}:${minute.padStart(2, "0")} ${ampm}`;
 
     if (isMysqlConnected()) {
-      const pRows = await db.query('SELECT patient_no, firstname, lastname FROM patient_personal_info WHERE patient_no = ?', [patient]);
+      const pRows = await db.query(
+        "SELECT patient_no, firstname, lastname FROM patient_personal_info WHERE patient_no = ?",
+        [patient],
+      );
       if (pRows.length === 0) {
-        return res.status(404).json({ error: 'Patient not found' });
+        return res.status(404).json({ error: "Patient not found" });
       }
 
-      const dRows = await db.query('SELECT user_id, firstname, lastname, department FROM users WHERE user_id = ?', [doctor]);
+      const dRows = await db.query(
+        "SELECT user_id, firstname, lastname, department FROM users WHERE user_id = ?",
+        [doctor],
+      );
       if (dRows.length === 0) {
-        return res.status(404).json({ error: 'Doctor not found' });
+        return res.status(404).json({ error: "Doctor not found" });
       }
 
-      const rawStatus = 'S';
+      const rawStatus = "S";
       const appHourNum = parseInt(hour, 10);
       const appMinNum = parseInt(minute, 10);
-      
-      let militaryHour = appHourNum;
-      if (ampm === 'PM' && appHourNum < 12) militaryHour += 12;
-      if (ampm === 'AM' && appHourNum === 12) militaryHour = 0;
-      const formattedTime = `${militaryHour.toString().padStart(2, '0')}:${minute.padStart(2, '0')}:00`;
 
-      const insertResult = await db.query(`
+      let militaryHour = appHourNum;
+      if (ampm === "PM" && appHourNum < 12) militaryHour += 12;
+      if (ampm === "AM" && appHourNum === 12) militaryHour = 0;
+      const formattedTime = `${militaryHour.toString().padStart(2, "0")}:${minute.padStart(2, "0")}:00`;
+
+      const insertResult = await db.query(
+        `
         INSERT INTO patient_appointment 
           (patient_no, appointmentDate, appHour, appMinutes, appAMPM, appointmentTime, appointmentReason, consultantDoctor, dateVisit, appointmentStatus, dateEntry)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-      `, [
-        patient, 
-        date, 
-        appHourNum, 
-        appMinNum, 
-        ampm, 
-        formattedTime, 
-        reason || '', 
-        doctor, 
-        `${date} ${formattedTime}`,
-        rawStatus
-      ]);
+      `,
+        [
+          patient,
+          date,
+          appHourNum,
+          appMinNum,
+          ampm,
+          formattedTime,
+          reason || "",
+          doctor,
+          `${date} ${formattedTime}`,
+          rawStatus,
+        ],
+      );
 
       return res.status(201).json({
         id: insertResult.insertId.toString(),
@@ -169,46 +188,57 @@ exports.createAppointment = async (req, res, next) => {
         doctor: `Dr. ${dRows[0].firstname} ${dRows[0].lastname}`,
         date,
         time: timeStr,
-        reason: reason || '',
-        status: 'Scheduled'
+        reason: reason || "",
+        status: "Scheduled",
       });
     } else {
       const patients = dbJson.getPatients();
       const doctors = dbJson.getDoctors();
       const depts = dbJson.getDepartments();
 
-      const dbPatient = patients.find(p => p.id === patient || p.patientNo === patient);
+      const dbPatient = patients.find(
+        (p) => p.id === patient || p.patientNo === patient,
+      );
       if (!dbPatient) {
-        return res.status(404).json({ error: 'Patient not found' });
+        return res.status(404).json({ error: "Patient not found" });
       }
 
-      const dbDoctor = doctors.find(d => d.id === doctor || d.empNo === doctor);
+      const dbDoctor = doctors.find(
+        (d) => d.id === doctor || d.empNo === doctor,
+      );
       if (!dbDoctor) {
-        return res.status(404).json({ error: 'Doctor not found' });
+        return res.status(404).json({ error: "Doctor not found" });
       }
 
-      let deptName = '';
+      let deptName = "";
       if (department) {
-        const dbDept = depts.find(d => d.id === department || d.code === department);
-        deptName = dbDept ? dbDept.name : '';
+        const dbDept = depts.find(
+          (d) => d.id === department || d.code === department,
+        );
+        deptName = dbDept ? dbDept.name : "";
       } else {
-        deptName = dbDoctor.department || '';
+        deptName = dbDoctor.department || "";
       }
 
       const appointments = dbJson.getAppointments();
-      const nextId = appointments.length > 0 ? Math.max(...appointments.map(a => Number(a.id) || 0)) + 1 : 1;
+      const nextId =
+        appointments.length > 0
+          ? Math.max(...appointments.map((a) => Number(a.id) || 0)) + 1
+          : 1;
 
       const newAppointment = {
         id: nextId.toString(),
         patientId: dbPatient.id,
         patientName: `${dbPatient.firstName} ${dbPatient.lastName}`,
         doctorId: dbDoctor.id,
-        doctor: dbDoctor.firstName.startsWith('Dr.') ? `${dbDoctor.firstName} ${dbDoctor.lastName}` : `Dr. ${dbDoctor.firstName} ${dbDoctor.lastName}`,
+        doctor: dbDoctor.firstName.startsWith("Dr.")
+          ? `${dbDoctor.firstName} ${dbDoctor.lastName}`
+          : `Dr. ${dbDoctor.firstName} ${dbDoctor.lastName}`,
         department: deptName,
         date,
         time: timeStr,
-        reason: reason || '',
-        status: 'Scheduled'
+        reason: reason || "",
+        status: "Scheduled",
       };
 
       appointments.push(newAppointment);
@@ -232,23 +262,23 @@ exports.updateAppointment = async (req, res, next) => {
       if (status) {
         const mysqlStatus = MERN_TO_MYSQL_STATUS[status];
         if (mysqlStatus) {
-          updates.push('appointmentStatus = ?');
+          updates.push("appointmentStatus = ?");
           params.push(mysqlStatus);
         }
       }
 
       if (date) {
-        updates.push('appointmentDate = ?');
+        updates.push("appointmentDate = ?");
         params.push(date);
       }
 
       if (reason !== undefined) {
-        updates.push('appointmentReason = ?');
+        updates.push("appointmentReason = ?");
         params.push(reason);
       }
 
       if (doctor) {
-        updates.push('consultantDoctor = ?');
+        updates.push("consultantDoctor = ?");
         params.push(doctor);
       }
 
@@ -256,17 +286,17 @@ exports.updateAppointment = async (req, res, next) => {
         const appHourNum = parseInt(hour, 10);
         const appMinNum = parseInt(minute, 10);
         let militaryHour = appHourNum;
-        if (ampm === 'PM' && appHourNum < 12) militaryHour += 12;
-        if (ampm === 'AM' && appHourNum === 12) militaryHour = 0;
-        const formattedTime = `${militaryHour.toString().padStart(2, '0')}:${minute.padStart(2, '0')}:00`;
+        if (ampm === "PM" && appHourNum < 12) militaryHour += 12;
+        if (ampm === "AM" && appHourNum === 12) militaryHour = 0;
+        const formattedTime = `${militaryHour.toString().padStart(2, "0")}:${minute.padStart(2, "0")}:00`;
 
-        updates.push('appHour = ?');
+        updates.push("appHour = ?");
         params.push(appHourNum);
-        updates.push('appMinutes = ?');
+        updates.push("appMinutes = ?");
         params.push(appMinNum);
-        updates.push('appAMPM = ?');
+        updates.push("appAMPM = ?");
         params.push(ampm);
-        updates.push('appointmentTime = ?');
+        updates.push("appointmentTime = ?");
         params.push(formattedTime);
       }
 
@@ -277,11 +307,15 @@ exports.updateAppointment = async (req, res, next) => {
         let finalAmPm = ampm;
 
         if (!finalDate || !finalHour || !finalMin || !finalAmPm) {
-          const currentRows = await db.query('SELECT DATE_FORMAT(appointmentDate, "%Y-%m-%d") as date, appHour, appMinutes, appAMPM FROM patient_appointment WHERE appID = ?', [appointmentId]);
+          const currentRows = await db.query(
+            'SELECT DATE_FORMAT(appointmentDate, "%Y-%m-%d") as date, appHour, appMinutes, appAMPM FROM patient_appointment WHERE appID = ?',
+            [appointmentId],
+          );
           if (currentRows.length > 0) {
             if (!finalDate) finalDate = currentRows[0].date;
             if (!finalHour) finalHour = currentRows[0].appHour.toString();
-            if (!finalMin) finalMin = currentRows[0].appMinutes.toString().padStart(2, '0');
+            if (!finalMin)
+              finalMin = currentRows[0].appMinutes.toString().padStart(2, "0");
             if (!finalAmPm) finalAmPm = currentRows[0].appAMPM;
           }
         }
@@ -289,23 +323,27 @@ exports.updateAppointment = async (req, res, next) => {
         if (finalDate && finalHour && finalMin && finalAmPm) {
           const appHourNum = parseInt(finalHour, 10);
           let militaryHour = appHourNum;
-          if (finalAmPm === 'PM' && appHourNum < 12) militaryHour += 12;
-          if (finalAmPm === 'AM' && appHourNum === 12) militaryHour = 0;
-          const formattedTime = `${militaryHour.toString().padStart(2, '0')}:${finalMin.padStart(2, '0')}:00`;
-          
-          updates.push('dateVisit = ?');
+          if (finalAmPm === "PM" && appHourNum < 12) militaryHour += 12;
+          if (finalAmPm === "AM" && appHourNum === 12) militaryHour = 0;
+          const formattedTime = `${militaryHour.toString().padStart(2, "0")}:${finalMin.padStart(2, "0")}:00`;
+
+          updates.push("dateVisit = ?");
           params.push(`${finalDate} ${formattedTime}`);
         }
       }
 
       if (updates.length === 0) {
-        return res.status(400).json({ error: 'No update parameters provided' });
+        return res.status(400).json({ error: "No update parameters provided" });
       }
 
       params.push(appointmentId);
-      await db.query(`UPDATE patient_appointment SET ${updates.join(', ')} WHERE appID = ?`, params);
-      
-      const updatedRows = await db.query(`
+      await db.query(
+        `UPDATE patient_appointment SET ${updates.join(", ")} WHERE appID = ?`,
+        params,
+      );
+
+      const updatedRows = await db.query(
+        `
         SELECT a.appID as id, a.patient_no, a.appointmentDate, a.appointmentReason, a.appointmentStatus,
                CONCAT(p.firstname, ' ', p.lastname) as patientName,
                CONCAT('Dr. ', d.firstname, ' ', d.lastname) as doctor,
@@ -318,10 +356,12 @@ exports.updateAppointment = async (req, res, next) => {
         LEFT JOIN users d ON a.consultantDoctor = d.user_id
         LEFT JOIN department dept ON d.department = dept.department_id
         WHERE a.appID = ?
-      `, [appointmentId]);
+      `,
+        [appointmentId],
+      );
 
       if (updatedRows.length === 0) {
-        return res.status(404).json({ error: 'Appointment not found' });
+        return res.status(404).json({ error: "Appointment not found" });
       }
 
       const r = updatedRows[0];
@@ -331,40 +371,51 @@ exports.updateAppointment = async (req, res, next) => {
         patientName: r.patientName,
         doctorId: r.doctorId,
         doctor: r.doctor,
-        department: r.department || 'General Medicine',
+        department: r.department || "General Medicine",
         date: r.date,
         time: r.time,
         reason: r.appointmentReason,
-        status: MYSQL_TO_MERN_STATUS[r.appointmentStatus] || 'Scheduled'
+        status: MYSQL_TO_MERN_STATUS[r.appointmentStatus] || "Scheduled",
       });
     } else {
       const appointments = dbJson.getAppointments();
-      const index = appointments.findIndex(a => a.id === appointmentId || a._id === appointmentId);
-      
+      const index = appointments.findIndex(
+        (a) => a.id === appointmentId || a._id === appointmentId,
+      );
+
       if (index === -1) {
-        return res.status(404).json({ error: 'Appointment not found' });
+        return res.status(404).json({ error: "Appointment not found" });
       }
 
       let app = appointments[index];
       if (status) app.status = status;
       if (date) app.date = date;
       if (reason !== undefined) app.reason = reason;
-      
+
       if (doctor) {
         const doctors = dbJson.getDoctors();
-        const dbDoctor = doctors.find(d => d.id === doctor || d.empNo === doctor);
+        const dbDoctor = doctors.find(
+          (d) => d.id === doctor || d.empNo === doctor,
+        );
         if (dbDoctor) {
           app.doctorId = dbDoctor.id;
-          app.doctor = dbDoctor.firstName.startsWith('Dr.') ? `${dbDoctor.firstName} ${dbDoctor.lastName}` : `Dr. ${dbDoctor.firstName} ${dbDoctor.lastName}`;
-          
+          app.doctor = dbDoctor.firstName.startsWith("Dr.")
+            ? `${dbDoctor.firstName} ${dbDoctor.lastName}`
+            : `Dr. ${dbDoctor.firstName} ${dbDoctor.lastName}`;
+
           const depts = dbJson.getDepartments();
-          const dbDept = depts.find(d => d.id === dbDoctor.department || d.code === dbDoctor.department);
-          app.department = dbDept ? dbDept.name : (dbDoctor.department || 'General Medicine');
+          const dbDept = depts.find(
+            (d) =>
+              d.id === dbDoctor.department || d.code === dbDoctor.department,
+          );
+          app.department = dbDept
+            ? dbDept.name
+            : dbDoctor.department || "General Medicine";
         }
       }
 
       if (hour && minute && ampm) {
-        app.time = `${hour.padStart(2, '0')}:${minute.padStart(2, '0')} ${ampm}`;
+        app.time = `${hour.padStart(2, "0")}:${minute.padStart(2, "0")} ${ampm}`;
       }
 
       appointments[index] = app;
@@ -381,23 +432,36 @@ exports.deleteAppointment = async (req, res, next) => {
     const appointmentId = req.params.id;
 
     if (isMysqlConnected()) {
-      const checkRows = await db.query('SELECT appID FROM patient_appointment WHERE appID = ?', [appointmentId]);
+      const checkRows = await db.query(
+        "SELECT appID FROM patient_appointment WHERE appID = ?",
+        [appointmentId],
+      );
       if (checkRows.length === 0) {
-        return res.status(404).json({ error: 'Appointment not found' });
+        return res.status(404).json({ error: "Appointment not found" });
       }
 
-      await db.query('DELETE FROM patient_appointment WHERE appID = ?', [appointmentId]);
-      return res.json({ message: 'Appointment deleted successfully', deletedId: appointmentId });
+      await db.query("DELETE FROM patient_appointment WHERE appID = ?", [
+        appointmentId,
+      ]);
+      return res.json({
+        message: "Appointment deleted successfully",
+        deletedId: appointmentId,
+      });
     } else {
       const appointments = dbJson.getAppointments();
-      const filtered = appointments.filter(a => a.id !== appointmentId && a._id !== appointmentId);
-      
+      const filtered = appointments.filter(
+        (a) => a.id !== appointmentId && a._id !== appointmentId,
+      );
+
       if (filtered.length === appointments.length) {
-        return res.status(404).json({ error: 'Appointment not found' });
+        return res.status(404).json({ error: "Appointment not found" });
       }
 
       dbJson.saveAppointments(filtered);
-      return res.json({ message: 'Appointment deleted successfully', deletedId: appointmentId });
+      return res.json({
+        message: "Appointment deleted successfully",
+        deletedId: appointmentId,
+      });
     }
   } catch (error) {
     next(error);
