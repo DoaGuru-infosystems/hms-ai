@@ -3,11 +3,12 @@ import {
   Building2, Users, FileText, Bell, Search, Settings, User, CheckCircle2, 
   XCircle, Clock, CalendarDays, Activity, ArrowLeft, MoreHorizontal, Plus, 
   HelpCircle, Sparkles, Filter, ChevronDown, Check, ShieldAlert, Receipt, 
-  CreditCard, Eye, Download, Info
+  CreditCard, Eye, Download, Info, LogOut
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { superAdminDashboard, superAdminHospitals } from '../utils/api';
 
-export default function Dashboard() {
+export default function Dashboard({ onLogout }) {
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [selectedInvoice, setSelectedInvoice] = useState(null);
 
@@ -16,27 +17,21 @@ export default function Dashboard() {
   const [hospitals, setHospitals] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
 
-  // Fetch real data on load
+  // Fetch real data on load using Axios Centralized API helper
   useEffect(() => {
-    const token = localStorage.getItem('superAdminToken');
-    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-
     // 1. Fetch Stats
-    fetch('http://localhost:5001/api/superadmin/dashboard/stats', { headers })
-      .then(res => res.ok ? res.json() : Promise.reject())
-      .then(data => setStats(data))
+    superAdminDashboard.getStats()
+      .then(res => setStats(res.data))
       .catch(() => console.log("Backend offline or unauthorized - using fallback stats"));
 
     // 2. Fetch Hospitals
-    fetch('http://localhost:5001/api/superadmin/hospitals', { headers })
-      .then(res => res.ok ? res.json() : Promise.reject())
-      .then(data => setHospitals(data))
+    superAdminHospitals.getAll()
+      .then(res => setHospitals(res.data))
       .catch(() => console.log("Backend offline or unauthorized - using fallback hospitals"));
 
     // 3. Fetch Audit Logs
-    fetch('http://localhost:5001/api/superadmin/dashboard/logs', { headers })
-      .then(res => res.ok ? res.json() : Promise.reject())
-      .then(data => setAuditLogs(data))
+    superAdminDashboard.getAuditLogs()
+      .then(res => setAuditLogs(res.data))
       .catch(() => console.log("Backend offline or unauthorized - using fallback audit logs"));
   }, [currentTab]);
 
@@ -418,6 +413,16 @@ export default function Dashboard() {
             <button className="nav-icon-btn"><Search size={18} /></button>
             <button className="nav-icon-btn"><Bell size={18} /></button>
             <div className="profile-avatar">SA</div>
+            {onLogout && (
+              <button 
+                className="nav-icon-btn" 
+                onClick={onLogout} 
+                title="Sign Out Super Admin"
+                style={{ color: 'var(--status-danger)', background: '#fef2f2' }}
+              >
+                <LogOut size={16} />
+              </button>
+            )}
           </div>
         </nav>
 

@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+
 :root {
   --bg-main: #f0f2f5;
   --bg-sidebar: #ffffff;
@@ -5,10 +7,10 @@
   --text-primary: #1e293b;
   --text-secondary: #64748b;
   --text-muted: #94a3b8;
-  
+
   --accent-dark: #1e1e1e;
   --accent-blue: #3b82f6;
-  
+
   --status-success: #10b981;
   --status-warning: #f59e0b;
   --status-danger: #ef4444;
@@ -17,9 +19,13 @@
   --border-radius-xl: 28px;
   --border-radius-lg: 20px;
   --border-radius-md: 12px;
-  
-  --shadow-subtle: 0 4px 20px -2px rgba(148, 163, 184, 0.08), 0 2px 8px -1px rgba(148, 163, 184, 0.04);
-  --shadow-card: 0 10px 30px -5px rgba(148, 163, 184, 0.12), 0 4px 12px -2px rgba(148, 163, 184, 0.06);
+
+  --shadow-subtle:
+    0 4px 20px -2px rgba(148, 163, 184, 0.08),
+    0 2px 8px -1px rgba(148, 163, 184, 0.04);
+  --shadow-card:
+    0 10px 30px -5px rgba(148, 163, 184, 0.12),
+    0 4px 12px -2px rgba(148, 163, 184, 0.06);
 }
 
 * {
@@ -29,7 +35,13 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    "Poppins",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
   background-color: var(--bg-main);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
@@ -80,7 +92,8 @@ body {
   transition: all 0.2s ease;
 }
 
-.sidebar-btn:hover, .sidebar-btn.active {
+.sidebar-btn:hover,
+.sidebar-btn.active {
   background: rgba(226, 232, 240, 0.6);
   color: var(--text-primary);
 }
@@ -253,9 +266,15 @@ body {
   border: 1.5px solid white;
 }
 
-.avatar-badge.success { background-color: var(--status-success); }
-.avatar-badge.warning { background-color: var(--status-warning); }
-.avatar-badge.danger { background-color: var(--status-danger); }
+.avatar-badge.success {
+  background-color: var(--status-success);
+}
+.avatar-badge.warning {
+  background-color: var(--status-warning);
+}
+.avatar-badge.danger {
+  background-color: var(--status-danger);
+}
 
 /* Main Journey Board Board Wrapper */
 .board-outer-container {
@@ -386,10 +405,18 @@ body {
   font-weight: 500;
 }
 
-.meta-status.success { color: var(--status-success); }
-.meta-status.warning { color: var(--status-warning); }
-.meta-status.danger { color: var(--status-danger); }
-.active-step .meta-status { color: #ffffff !important; }
+.meta-status.success {
+  color: var(--status-success);
+}
+.meta-status.warning {
+  color: var(--status-warning);
+}
+.meta-status.danger {
+  color: var(--status-danger);
+}
+.active-step .meta-status {
+  color: #ffffff !important;
+}
 
 /* SVG Connectors */
 .connector-svg {
@@ -463,9 +490,18 @@ body {
   display: inline-block;
 }
 
-.status-pill.active { background: #d1fae5; color: #065f46; }
-.status-pill.pending { background: #fef3c7; color: #92400e; }
-.status-pill.failed { background: #fee2e2; color: #991b1b; }
+.status-pill.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+.status-pill.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+.status-pill.failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
 
 /* Donut Chart container */
 .chart-content-area {
@@ -513,7 +549,7 @@ body {
   border: none;
   background: var(--bg-sidebar);
   color: var(--text-primary);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -528,4 +564,481 @@ body {
 .floating-btn.primary {
   background: var(--accent-dark);
   color: white;
+}
+
+/* ==========================================================================
+   GLASS MORPHISM LOGIN SCREEN (LUMIN COMMUNITY STYLE FOR HMS)
+   ========================================================================== */
+/* ==========================================================================
+   GLASS MORPHISM LOGIN SCREEN (LUMIN COMMUNITY STYLE WITH MICRO-INTERACTIONS)
+   ========================================================================== */
+.glass-login-bg {
+  min-height: 100vh;
+  width: 100vw;
+  background: radial-gradient(
+    circle at 50% 50%,
+    #f8fafc 0%,
+    #e2e8f0 55%,
+    #c6c7c9 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+}
+
+/* Neutral frosted ambient circles */
+.mesh-circle {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  pointer-events: none;
+}
+
+.circle-1 {
+  width: 550px;
+  height: 550px;
+  background: rgba(255, 255, 255, 0.75);
+  top: -120px;
+  right: 12%;
+}
+
+.circle-2 {
+  width: 650px;
+  height: 650px;
+  background: rgba(203, 213, 225, 0.55);
+  bottom: -180px;
+  left: 5%;
+}
+
+.circle-3 {
+  width: 450px;
+  height: 450px;
+  background: rgba(248, 250, 252, 0.65);
+  top: 25%;
+  left: 28%;
+}
+
+.glass-card-container {
+  width: 100%;
+  max-width: 480px;
+  z-index: 20;
+  display: flex;
+  justify-content: center;
+}
+
+.frosted-glass-card {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(40px) saturate(140%);
+  -webkit-backdrop-filter: blur(40px) saturate(140%);
+  border-radius: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 30px 60px -12px rgba(15, 23, 42, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  padding: 40px 38px 44px 38px;
+  position: relative;
+  overflow: hidden;
+  animation: cardSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cardSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Shake Animation on Login Error */
+.frosted-glass-card.shake-error {
+  animation: shakeCard 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes shakeCard {
+  10%,
+  90% {
+    transform: translate3d(-2px, 0, 0);
+  }
+  20%,
+  80% {
+    transform: translate3d(4px, 0, 0);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-6px, 0, 0);
+  }
+  40%,
+  60% {
+    transform: translate3d(6px, 0, 0);
+  }
+}
+
+.glass-card-glow {
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.7) 0%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  pointer-events: none;
+}
+
+/* Top bar inside card */
+.glass-card-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.glass-brand-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.3px;
+}
+
+.brand-icon-sparkle {
+  color: #2563eb;
+  transition: transform 0.3s ease;
+}
+
+.glass-brand-name:hover .brand-icon-sparkle {
+  transform: rotate(15deg) scale(1.15);
+}
+
+.glass-pill-demo-btn {
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  color: #0f172a;
+  padding: 6px 16px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+}
+
+.glass-pill-demo-btn:hover:not(:disabled) {
+  background: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.glass-pill-demo-btn.typing {
+  background: #dbeafe;
+  color: #1e40af;
+  border-color: #93c5fd;
+  cursor: wait;
+}
+
+/* Login Title */
+.glass-login-title {
+  font-size: 34px;
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: -1px;
+  margin-bottom: 24px;
+}
+
+/* Error badge */
+.glass-error-badge {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #991b1b;
+  padding: 10px 16px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.glass-error-badge.animate-fade-in {
+  animation: fadeInAlert 0.3s ease-out forwards;
+}
+
+@keyframes fadeInAlert {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Form Styles */
+.glass-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.glass-input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.glass-pill-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px);
+  border-radius: 99px;
+  padding: 5px 8px 5px 8px;
+  border: 1.5px solid rgba(203, 213, 225, 0.8);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 52px;
+}
+
+.glass-pill-input-wrapper:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: #cbd5e1;
+}
+
+/* Focus glow & icon color change */
+.glass-pill-input-wrapper:focus-within {
+  background: #ffffff;
+  border-color: #0f172a;
+  box-shadow:
+    0 0 0 4px rgba(15, 23, 42, 0.08),
+    0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.glass-pill-input-wrapper:focus-within .input-icon-svg {
+  color: #2563eb;
+  transform: scale(1.1);
+}
+
+.glass-pill-input-wrapper:focus-within .pill-icon-circle {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+/* Validation styles */
+.glass-pill-input-wrapper.input-invalid {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12) !important;
+  background: rgba(254, 242, 242, 0.95) !important;
+}
+
+.glass-pill-input-wrapper.input-invalid .pill-icon-circle {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.glass-pill-input-wrapper.input-invalid .input-icon-svg {
+  color: #dc2626 !important;
+}
+
+.glass-pill-input-wrapper.input-valid .pill-icon-circle {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.glass-pill-input-wrapper.input-valid .input-icon-svg {
+  color: #10b981;
+}
+
+.field-error-subtext {
+  font-size: 11px;
+  color: #dc2626;
+  font-weight: 600;
+  margin-top: 5px;
+  margin-left: 16px;
+  animation: fadeInAlert 0.2s ease-out forwards;
+}
+
+.valid-check-icon {
+  color: #10b981;
+  margin-right: 12px;
+  animation: fadeInAlert 0.2s ease-out forwards;
+}
+
+.pill-icon-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.8);
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.input-icon-svg {
+  color: #0f172a;
+  transition: all 0.2s ease;
+}
+
+.glass-pill-input-wrapper input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0 14px;
+  font-size: 14px;
+  color: #0f172a;
+  font-weight: 500;
+  outline: none;
+}
+
+.glass-pill-input-wrapper input::placeholder {
+  color: #64748b;
+  font-weight: 400;
+}
+
+.glass-eye-toggle-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.glass-eye-toggle-btn:hover {
+  color: #0f172a;
+  transform: scale(1.1);
+}
+
+.glass-eye-toggle-btn.active {
+  color: #2563eb;
+}
+
+.forgot-pass-row {
+  margin-top: 4px;
+  margin-bottom: 24px;
+}
+
+.glass-forgot-link {
+  font-size: 13px;
+  color: #0f172a;
+  text-decoration: underline;
+  text-decoration-color: rgba(15, 23, 42, 0.3);
+  text-underline-offset: 3px;
+  font-weight: 500;
+  opacity: 0.85;
+  transition: all 0.2s ease;
+}
+
+.glass-forgot-link:hover {
+  opacity: 1;
+  color: #2563eb;
+  text-decoration-color: #2563eb;
+  text-underline-offset: 5px;
+}
+
+/* Bottom Row inside Glass Card */
+.glass-card-bottom-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.glass-disclaimer-text {
+  font-size: 11px;
+  line-height: 1.45;
+  color: #334155;
+  font-weight: 500;
+  max-width: 280px;
+  opacity: 0.85;
+}
+
+/* Dark Floating Circular Action Button */
+.glass-floating-submit-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: none;
+  background: #0f172a;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.4);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.glass-floating-submit-btn:hover:not(:disabled) {
+  background: #000000;
+  transform: scale(1.06) translateY(-2px);
+  box-shadow: 0 16px 32px -4px rgba(0, 0, 0, 0.45);
+}
+
+.glass-floating-submit-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.submit-arrow-icon {
+  color: #ffffff;
+  transition: transform 0.2s ease;
+}
+
+.glass-floating-submit-btn:hover .submit-arrow-icon {
+  transform: translate(2px, 2px);
+}
+
+.submit-spinner-icon {
+  animation: spinLoader 0.8s linear infinite;
+  color: #ffffff;
+}
+
+@keyframes spinLoader {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 520px) {
+  .frosted-glass-card {
+    padding: 28px 24px 32px 24px;
+    border-radius: 28px;
+  }
+  .glass-login-title {
+    font-size: 28px;
+  }
+  .glass-card-bottom-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .glass-floating-submit-btn {
+    align-self: flex-end;
+    margin-top: -20px;
+  }
 }
