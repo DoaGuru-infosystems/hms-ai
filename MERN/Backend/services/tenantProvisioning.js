@@ -10,7 +10,10 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
  * Implements Duplicate Validation, Auto-Provisioning, and Retry Mechanism.
  */
 const onboardNewHospital = async (hospitalData) => {
-  const { hospitalName, bedsCount, adminEmail, adminUsername, adminPassword } = hospitalData;
+  const { 
+    hospitalName, bedsCount, adminEmail, adminUsername, adminPassword,
+    address, contactNumber, extraData 
+  } = hospitalData;
   const masterPool = getMasterPool();
 
   // 1. Duplicate Validation
@@ -35,11 +38,13 @@ const onboardNewHospital = async (hospitalData) => {
   let hospitalId = null;
 
   try {
+    const extraDataJson = extraData ? JSON.stringify(extraData) : null;
+
     // 2. Insert into Master DB as 'Provisioning'
     const [hospitalInsert] = await masterPool.query(
-      `INSERT INTO hospitals (hospital_name, db_host, db_name, db_user, db_password, status, admin_email)
-       VALUES (?, ?, ?, ?, ?, 'Provisioning', ?)`,
-      [hospitalName, dbHost, dbName, dbUser, encryptedDbPassword, adminEmail]
+      `INSERT INTO hospitals (hospital_name, db_host, db_name, db_user, db_password, status, admin_email, address, contact_number, extra_data)
+       VALUES (?, ?, ?, ?, ?, 'Provisioning', ?, ?, ?, ?)`,
+      [hospitalName, dbHost, dbName, dbUser, encryptedDbPassword, adminEmail, address || null, contactNumber || null, extraDataJson]
     );
     hospitalId = hospitalInsert.insertId;
 

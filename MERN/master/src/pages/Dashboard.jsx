@@ -3,22 +3,24 @@ import {
   Building2, Users, FileText, Bell, Search, Settings, User, CheckCircle2, 
   XCircle, Clock, CalendarDays, Activity, ArrowLeft, MoreHorizontal, Plus, 
   HelpCircle, Sparkles, Filter, ChevronDown, Check, ShieldAlert, Receipt, 
-  CreditCard, Eye, Download, Info, LogOut
+  CreditCard, Eye, Download, Info, LogOut, Menu, X
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { superAdminDashboard, superAdminHospitals } from '../utils/api';
+import AddHospitalModal from '../components/AddHospitalModal';
 
 export default function Dashboard({ onLogout }) {
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [isAddHospitalOpen, setIsAddHospitalOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Backend state
   const [stats, setStats] = useState(null);
   const [hospitals, setHospitals] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
 
-  // Fetch real data on load using Axios Centralized API helper
-  useEffect(() => {
+  const loadData = () => {
     // 1. Fetch Stats
     superAdminDashboard.getStats()
       .then(res => setStats(res.data))
@@ -33,6 +35,11 @@ export default function Dashboard({ onLogout }) {
     superAdminDashboard.getAuditLogs()
       .then(res => setAuditLogs(res.data))
       .catch(() => console.log("Backend offline or unauthorized - using fallback audit logs"));
+  };
+
+  // Fetch real data on load using Axios Centralized API helper
+  useEffect(() => {
+    loadData();
   }, [currentTab]);
 
   // Donut Chart Data
@@ -72,17 +79,27 @@ export default function Dashboard({ onLogout }) {
           <h2>Hospital Management</h2>
         </div>
 
-        <div className="avatar-stack-container">
-          <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginRight: '4px' }}>
-            Recently Onboarded:
-          </span>
-          <div style={{ display: 'flex', gap: '4px' }}>
-            {['AH', 'MC', 'CL', 'FH'].map((name, idx) => (
-              <div key={idx} className="avatar-item">
-                {name}
-                <span className={`avatar-badge ${idx === 2 ? 'danger' : idx === 3 ? 'warning' : 'success'}`} />
-              </div>
-            ))}
+        <div className="avatar-stack-container" style={{ gap: '16px' }}>
+          <button 
+            className="btn-primary-dark" 
+            onClick={() => setIsAddHospitalOpen(true)}
+            style={{ padding: '8px 18px', fontSize: '13px', borderRadius: '99px', display: 'flex', alignItems: 'center', gap: '6px', background: '#0f172a', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: '600' }}
+          >
+            <Plus size={16} /> Onboard Hospital
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginRight: '4px' }}>
+              Recently Onboarded:
+            </span>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {['AH', 'MC', 'CL', 'FH'].map((name, idx) => (
+                <div key={idx} className="avatar-item">
+                  {name}
+                  <span className={`avatar-badge ${idx === 2 ? 'danger' : idx === 3 ? 'warning' : 'success'}`} />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </header>
@@ -398,6 +415,9 @@ export default function Dashboard({ onLogout }) {
         {/* 2. Top Nav Bar */}
         <nav className="top-navbar">
           <div className="nav-brand">
+            <button className="mobile-menu-btn" onClick={() => setIsMobileSidebarOpen(true)}>
+              <Menu size={22} color="var(--text-primary)" />
+            </button>
             <Sparkles size={20} color="var(--accent-blue)" />
             HMS Platform
           </div>
@@ -425,6 +445,48 @@ export default function Dashboard({ onLogout }) {
             )}
           </div>
         </nav>
+
+        {/* Mobile Sidebar Overlay */}
+        {isMobileSidebarOpen && (
+          <div className="mobile-sidebar-overlay" onClick={() => setIsMobileSidebarOpen(false)} />
+        )}
+        
+        {/* Mobile Sidebar */}
+        <div className={`mobile-sidebar ${isMobileSidebarOpen ? 'open' : ''}`}>
+          <div className="mobile-sidebar-header">
+            <div className="nav-brand" style={{ padding: 0 }}>
+              <Sparkles size={20} color="var(--accent-blue)" />
+              HMS Platform
+            </div>
+            <button className="nav-icon-btn" onClick={() => setIsMobileSidebarOpen(false)}>
+              <X size={20} />
+            </button>
+          </div>
+          
+          <div className="mobile-sidebar-nav">
+            <button className={`nav-tab-pill ${currentTab === 'dashboard' ? 'active' : ''}`} onClick={() => { setCurrentTab('dashboard'); setSelectedInvoice(null); setIsMobileSidebarOpen(false); }}>Dashboard</button>
+            <button className={`nav-tab-pill ${currentTab === 'subscriptions' ? 'active' : ''}`} onClick={() => { setCurrentTab('subscriptions'); setSelectedInvoice(null); setIsMobileSidebarOpen(false); }}>Subscriptions</button>
+            <button className={`nav-tab-pill ${currentTab === 'payments' ? 'active' : ''}`} onClick={() => { setCurrentTab('payments'); setSelectedInvoice(null); setIsMobileSidebarOpen(false); }}>Payments</button>
+            <button className={`nav-tab-pill ${currentTab === 'audit' ? 'active' : ''}`} onClick={() => { setCurrentTab('audit'); setSelectedInvoice(null); setIsMobileSidebarOpen(false); }}>Audit Logs</button>
+          </div>
+
+          <div className="mobile-sidebar-footer">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div className="profile-avatar">SA</div>
+              <div style={{ fontSize: '14px', fontWeight: '600' }}>Super Admin</div>
+            </div>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button className="nav-icon-btn"><Search size={18} /></button>
+              <button className="nav-icon-btn"><Bell size={18} /></button>
+              <button className="nav-icon-btn"><Settings size={18} /></button>
+              {onLogout && (
+                <button className="nav-icon-btn" onClick={onLogout} style={{ color: 'var(--status-danger)', background: '#fef2f2', marginLeft: 'auto' }}>
+                  <LogOut size={18} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Selected Invoice View / Modal Overlay */}
         {selectedInvoice ? (
@@ -498,9 +560,18 @@ export default function Dashboard({ onLogout }) {
 
       {/* Floating Buttons */}
       <div className="floating-actions">
-        <button className="floating-btn primary" title="Onboard New Hospital"><Plus size={20} /></button>
+        <button className="floating-btn primary" title="Onboard New Hospital" onClick={() => setIsAddHospitalOpen(true)}>
+          <Plus size={20} />
+        </button>
         <button className="floating-btn" title="View Alerts"><ShieldAlert size={20} /></button>
       </div>
+
+      {/* Add Hospital Modal with Dynamic Custom Fields */}
+      <AddHospitalModal
+        isOpen={isAddHospitalOpen}
+        onClose={() => setIsAddHospitalOpen(false)}
+        onSuccess={() => loadData()}
+      />
     </div>
   );
 }

@@ -68,7 +68,31 @@ const initMasterTables = async () => {
         db_password VARCHAR(255) NOT NULL,
         status ENUM('Provisioning', 'Active', 'Provisioning Failed', 'Suspended') DEFAULT 'Provisioning',
         admin_email VARCHAR(255) NOT NULL,
+        address TEXT NULL,
+        contact_number VARCHAR(50) NULL,
+        extra_data JSON NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // Ensure columns exist on existing database instances
+    try { await connection.query("ALTER TABLE hospitals ADD COLUMN address TEXT NULL"); } catch (e) {}
+    try { await connection.query("ALTER TABLE hospitals ADD COLUMN contact_number VARCHAR(50) NULL"); } catch (e) {}
+    try { await connection.query("ALTER TABLE hospitals ADD COLUMN extra_data JSON NULL"); } catch (e) {}
+
+    // Custom Fields Configuration Table (Dynamic Form Metadata)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS custom_fields_config (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        form_name VARCHAR(100) NOT NULL,
+        field_name VARCHAR(100) NOT NULL,
+        field_label VARCHAR(255) NOT NULL,
+        field_type ENUM('text', 'number', 'date', 'select', 'checkbox', 'file', 'textarea', 'email', 'tel') NOT NULL,
+        is_required TINYINT(1) DEFAULT 0,
+        options_json JSON NULL,
+        file_config_json JSON NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_form_field (form_name, field_name)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 

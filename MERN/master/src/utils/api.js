@@ -53,4 +53,10 @@ export const superAdminHospitals = {
   retryProvisioning: (hospitalId) => api.post(`/superadmin/hospitals/retry/${hospitalId}`)
 };
 
+export const superAdminCustomFields = {
+  getByForm: (formName) => api.get(`/superadmin/custom-fields/${formName}`),
+  create: (data) => api.post('/superadmin/custom-fields', data),
+  delete: (id) => api.delete(`/superadmin/custom-fields/${id}`)
+};
+
 export default api;
