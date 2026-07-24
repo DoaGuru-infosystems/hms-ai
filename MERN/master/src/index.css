@@ -1353,6 +1353,7 @@ body {
   gap: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .btn-add-custom-field:hover {
@@ -1763,6 +1764,12 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .custom-fields-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
   .floating-actions {
     right: 16px;
     bottom: 16px;
@@ -1862,3 +1869,15 @@ body {
   }
 }
 
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}

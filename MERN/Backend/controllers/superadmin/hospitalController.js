@@ -3,16 +3,46 @@ const { onboardNewHospital, executeProvisioningWithRetry } = require("../../serv
 
 exports.getHospitals = async (req, res, next) => {
   try {
+    const { page = 1, limit = 10, search = '' } = req.query;
+    const pageNumber = parseInt(page, 10) || 1;
+    const limitNumber = parseInt(limit, 10) || 10;
+    const offset = (pageNumber - 1) * limitNumber;
+
     const masterPool = getMasterPool();
-    const query = `
+    
+    let query = `
       SELECT h.id, h.hospital_name, h.db_name, h.status, h.admin_email, h.created_at,
              s.plan_name, s.bed_count, s.total_monthly_price
       FROM hospitals h
       LEFT JOIN subscriptions s ON h.id = s.hospital_id
-      ORDER BY h.created_at DESC
     `;
-    const [rows] = await masterPool.query(query);
-    res.json(rows);
+    
+    const queryParams = [];
+
+    if (search) {
+      query += ` WHERE h.hospital_name LIKE ? OR s.plan_name LIKE ?`;
+      const searchPattern = `%${search}%`;
+      queryParams.push(searchPattern, searchPattern);
+    }
+
+    // Fetch limit + 1 to determine hasMore
+    query += ` ORDER BY h.created_at DESC LIMIT ? OFFSET ?`;
+    queryParams.push(limitNumber + 1, offset);
+
+    const [rows] = await masterPool.query(query, queryParams);
+    
+    let hasMore = false;
+    if (rows.length > limitNumber) {
+      hasMore = true;
+      rows.pop(); // Remove the extra record
+    }
+
+    res.json({
+      data: rows,
+      hasMore,
+      page: pageNumber,
+      limit: limitNumber
+    });
   } catch (error) {
     console.error("Error fetching hospitals:", error);
     res.status(500).json({ error: "Failed to fetch hospitals." });

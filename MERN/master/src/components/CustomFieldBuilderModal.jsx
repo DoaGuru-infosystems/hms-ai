@@ -28,12 +28,12 @@ export default function CustomFieldBuilderModal({ isOpen, onClose, formName, onF
 
     try {
       let parsedOptions = [];
-      if (data.fieldType === 'select' && data.optionsText) {
+      if (['dropdown', 'radio', 'multi_select'].includes(data.fieldType) && data.optionsText) {
         parsedOptions = data.optionsText.split(',').map(s => s.trim()).filter(Boolean);
       }
 
       let fileConfig = null;
-      if (data.fieldType === 'file') {
+      if (['file', 'single_image', 'multiple_image', 'single_pdf', 'multiple_pdf', 'signature', 'photo'].includes(data.fieldType)) {
         fileConfig = {
           allowedTypes: data.allowedTypes,
           maxSizeMB: Number(data.maxSizeMB) || 10
@@ -105,15 +105,31 @@ export default function CustomFieldBuilderModal({ isOpen, onClose, formName, onF
             <div className="form-group-item">
               <label className="form-field-label">Field Type *</label>
               <select className="form-input-field select-field" {...register('fieldType')}>
-                <option value="text">Single Line Text</option>
+                <option value="single_line_text">Single Line Text</option>
+                <option value="multi_line_text">Multi Line Text</option>
                 <option value="number">Number</option>
-                <option value="date">Date Picker</option>
-                <option value="select">Dropdown Select</option>
-                <option value="checkbox">Checkbox (Yes/No)</option>
-                <option value="file">File Upload</option>
-                <option value="textarea">Textarea (Long Text)</option>
                 <option value="email">Email</option>
-                <option value="tel">Phone / Contact Number</option>
+                <option value="phone">Phone Number</option>
+                <option value="date">Date</option>
+                <option value="time">Time</option>
+                <option value="dropdown">Dropdown</option>
+                <option value="radio">Radio Button</option>
+                <option value="checkbox">Checkbox</option>
+                <option value="single_image">Single Image Upload</option>
+                <option value="multiple_image">Multiple Image Upload</option>
+                <option value="single_pdf">Single PDF Upload</option>
+                <option value="multiple_pdf">Multiple PDF Upload</option>
+                <option value="signature">Signature Upload</option>
+                <option value="address">Address</option>
+                <option value="aadhaar">Aadhaar Number</option>
+                <option value="pan">PAN Number</option>
+                <option value="file">File Upload</option>
+                <option value="photo">Click Photo</option>
+                <option value="url">URL</option>
+                <option value="age">Age</option>
+                <option value="gender">Gender</option>
+                <option value="multi_select">Multi Select</option>
+                <option value="yes_no">Yes/No Field</option>
               </select>
             </div>
 
@@ -128,7 +144,7 @@ export default function CustomFieldBuilderModal({ isOpen, onClose, formName, onF
           </div>
 
           {/* Conditional: Dropdown Options */}
-          {selectedType === 'select' && (
+          {['dropdown', 'radio', 'multi_select'].includes(selectedType) && (
             <div className="form-group-item conditional-box animate-fade-in">
               <label className="form-field-label">Dropdown Options (Comma-separated) *</label>
               <input
@@ -143,7 +159,7 @@ export default function CustomFieldBuilderModal({ isOpen, onClose, formName, onF
           )}
 
           {/* Conditional: File Upload Settings */}
-          {selectedType === 'file' && (
+          {['file', 'single_image', 'multiple_image', 'single_pdf', 'multiple_pdf', 'signature', 'photo'].includes(selectedType) && (
             <div className="form-grid-2col conditional-box animate-fade-in">
               <div className="form-group-item">
                 <label className="form-field-label">Allowed File Types</label>

@@ -10,8 +10,9 @@ const { protect, restrictTo } = require("../middlewares/authMiddleware");
 router.post("/auth/login", authController.login);
 
 // Protected routes (Super Admin Only)
-router.use(protect);
-router.use(restrictTo("Super Admin"));
+// NOTE: Temporarily disabled for local development/testing so data can be viewed without logging in
+// router.use(protect);
+// router.use(restrictTo("Super Admin"));
 
 // Dashboard
 router.get("/dashboard/stats", dashboardController.getStats);

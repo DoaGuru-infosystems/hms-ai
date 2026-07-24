@@ -48,7 +48,10 @@ export const superAdminDashboard = {
 };
 
 export const superAdminHospitals = {
-  getAll: () => api.get('/superadmin/hospitals'),
+  getAll: (params = {}) => {
+    const { page = 1, limit = 10, search = '' } = params;
+    return api.get(`/superadmin/hospitals?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
+  },
   onboard: (hospitalData) => api.post('/superadmin/hospitals/onboard', hospitalData),
   retryProvisioning: (hospitalId) => api.post(`/superadmin/hospitals/retry/${hospitalId}`)
 };
