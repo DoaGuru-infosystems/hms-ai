@@ -9,6 +9,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { superAdminDashboard, superAdminHospitals } from '../utils/api';
 import AddHospitalModal from '../components/AddHospitalModal';
+import HospitalDetailModal from '../components/HospitalDetailModal';
 import OverviewTab from '../components/Dashboard/OverviewTab';
 import HospitalsTab from '../components/Dashboard/HospitalsTab';
 import SubscriptionsTab from '../components/Dashboard/SubscriptionsTab';
@@ -20,6 +21,8 @@ export default function Dashboard({ onLogout }) {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [isAddHospitalOpen, setIsAddHospitalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [selectedHospitalId, setSelectedHospitalId] = useState(null);
 
   // Backend state
   const [stats, setStats] = useState(null);
@@ -164,7 +167,7 @@ export default function Dashboard({ onLogout }) {
             {onLogout && (
               <button 
                 className="nav-icon-btn" 
-                onClick={onLogout} 
+                onClick={() => setIsLogoutModalOpen(true)} 
                 title="Sign Out Super Admin"
                 style={{ color: 'var(--status-danger)', background: '#fef2f2' }}
               >
@@ -280,8 +283,19 @@ export default function Dashboard({ onLogout }) {
         ) : (
           <>
             {currentTab === 'dashboard' && <OverviewTab setIsAddHospitalOpen={setIsAddHospitalOpen} setCurrentTab={setCurrentTab} setSelectedInvoice={setSelectedInvoice} isLoadingHospitals={isLoadingHospitals} hospitalsList={hospitalsList} stats={stats} />}
-            {currentTab === 'hospitals' && <HospitalsTab searchInput={searchInput} setSearchInput={setSearchInput} handleScroll={handleScroll} status={status} isLoadingHospitals={isLoadingHospitals} hospitalsList={hospitalsList} isFetchingNextPage={isFetchingNextPage} />}
-            {currentTab === 'subscriptions' && <SubscriptionsTab mockSubscriptions={mockSubscriptions} />}
+          {currentTab === 'hospitals' && (
+            <HospitalsTab 
+              searchInput={searchInput} 
+              setSearchInput={setSearchInput} 
+              handleScroll={handleScroll} 
+              status={status} 
+              isLoadingHospitals={isLoadingHospitals} 
+              hospitalsList={hospitalsList} 
+              isFetchingNextPage={isFetchingNextPage}
+              onRowClick={(id) => setSelectedHospitalId(id)}
+            />
+          )}
+          {currentTab === 'subscriptions' && <SubscriptionsTab mockSubscriptions={mockSubscriptions} />}
             {currentTab === 'payments' && <PaymentsTab mockPayments={mockPayments} setSelectedInvoice={setSelectedInvoice} />}
             {currentTab === 'audit' && <AuditLogsTab mockAuditLogs={mockAuditLogs} />}
           </>
@@ -301,6 +315,48 @@ export default function Dashboard({ onLogout }) {
         isOpen={isAddHospitalOpen}
         onClose={() => setIsAddHospitalOpen(false)}
         onSuccess={() => { loadData(); handleHospitalAdded(); }}
+      />
+
+      {/* Logout Confirmation Modal */}
+      {isLogoutModalOpen && (
+        <div className="modal-backdrop animate-fade-in">
+          <div className="cf-modal-card animate-slide-up" style={{ maxWidth: '400px', textAlign: 'center', display: 'flex', flexDirection: 'column' }}>
+            <div className="modal-header-bar" style={{ borderBottom: 'none', justifyContent: 'center', paddingBottom: 0, background: 'white' }}>
+              <div style={{ background: '#fef2f2', padding: '16px', borderRadius: '50%', display: 'inline-flex', marginBottom: '8px' }}>
+                <LogOut size={32} color="var(--status-danger)" />
+              </div>
+            </div>
+            <div className="modal-form-body" style={{ padding: '0 24px 24px' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '12px' }}>Confirm Logout</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '15px', lineHeight: '1.5', marginBottom: '24px' }}>
+                Are you sure you want to securely log out of the Super Admin console? You will need to re-authenticate to access the dashboard again.
+              </p>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                <button 
+                  className="btn-secondary" 
+                  onClick={() => setIsLogoutModalOpen(false)}
+                  style={{ flex: 1, padding: '10px' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="btn-primary" 
+                  onClick={() => { setIsLogoutModalOpen(false); onLogout(); }}
+                  style={{ flex: 1, padding: '10px', background: 'var(--status-danger)', border: 'none' }}
+                >
+                  Yes, Log Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hospital Detail Modal */}
+      <HospitalDetailModal 
+        isOpen={!!selectedHospitalId}
+        onClose={() => setSelectedHospitalId(null)}
+        hospitalId={selectedHospitalId}
       />
     </div>
   );

@@ -10,9 +10,8 @@ const { protect, restrictTo } = require("../middlewares/authMiddleware");
 router.post("/auth/login", authController.login);
 
 // Protected routes (Super Admin Only)
-// NOTE: Temporarily disabled for local development/testing so data can be viewed without logging in
-// router.use(protect);
-// router.use(restrictTo("Super Admin"));
+router.use(protect);
+router.use(restrictTo("Super Admin"));
 
 // Dashboard
 router.get("/dashboard/stats", dashboardController.getStats);
@@ -22,6 +21,8 @@ router.get("/dashboard/logs", dashboardController.getAuditLogs);
 router.get("/hospitals", hospitalController.getHospitals);
 router.post("/hospitals/onboard", hospitalController.onboardHospital);
 router.post("/hospitals/retry/:id", hospitalController.retryProvisioning);
+router.get("/hospitals/:id", hospitalController.getHospitalById);
+router.patch("/hospitals/:id/status", hospitalController.updateHospitalStatus);
 
 // Custom Fields Config
 router.get("/custom-fields/:formName", customFieldController.getCustomFieldsByForm);

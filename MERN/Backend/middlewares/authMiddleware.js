@@ -73,7 +73,7 @@ module.exports = {
    */
   signToken: (payload) => {
     return jwt.sign(payload, JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN || "8h",
+      expiresIn: "8h", // Temporarily set to 2 minutes for testing (was process.env.JWT_EXPIRES_IN || "8h")
     });
   },
 };

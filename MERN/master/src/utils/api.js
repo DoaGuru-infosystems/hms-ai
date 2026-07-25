@@ -32,6 +32,10 @@ api.interceptors.response.use(
       // Clear invalid credentials
       localStorage.removeItem('superAdminToken');
       localStorage.removeItem('superAdminUser');
+      
+      alert("Session Expired: Unauthorized access. You are being redirected to login.");
+      // Auto-logout: force reload so App.jsx picks up the null token and shows Login
+      window.location.href = '/';
     }
     return Promise.reject(error);
   }
@@ -53,7 +57,9 @@ export const superAdminHospitals = {
     return api.get(`/superadmin/hospitals?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
   },
   onboard: (hospitalData) => api.post('/superadmin/hospitals/onboard', hospitalData),
-  retryProvisioning: (hospitalId) => api.post(`/superadmin/hospitals/retry/${hospitalId}`)
+  retryProvisioning: (hospitalId) => api.post(`/superadmin/hospitals/retry/${hospitalId}`),
+  getById: (hospitalId) => api.get(`/superadmin/hospitals/${hospitalId}`),
+  updateStatus: (hospitalId, status) => api.patch(`/superadmin/hospitals/${hospitalId}/status`, { status })
 };
 
 export const superAdminCustomFields = {

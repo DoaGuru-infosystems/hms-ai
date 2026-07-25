@@ -8,7 +8,8 @@ export default function HospitalsTab({
   status, 
   isLoadingHospitals, 
   hospitalsList, 
-  isFetchingNextPage 
+  isFetchingNextPage,
+  onRowClick
 }) {
   return (
     <div style={{ padding: '32px', height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -47,7 +48,7 @@ export default function HospitalsTab({
                 </tr>
               ) : hospitalsList.length > 0 ? (
                 hospitalsList.map((h, idx) => (
-                  <tr key={h.id || idx}>
+                  <tr key={h.id || idx} onClick={() => onRowClick && onRowClick(h.id)} style={{ cursor: onRowClick ? 'pointer' : 'default' }}>
                     <td>{h.hospital_name}</td>
                     <td><span className={`status-pill ${h.status === 'Active' ? 'active' : h.status === 'Provisioning' ? 'pending' : 'failed'}`}>{h.status}</span></td>
                     <td>{h.bed_count || 100} Beds</td>

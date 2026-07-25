@@ -107,3 +107,66 @@ exports.retryProvisioning = async (req, res, next) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.getHospitalById = async (req, res, next) => {
+  try {
+    const hospitalId = req.params.id;
+    const masterPool = getMasterPool();
+    
+    const query = `
+      SELECT h.id, h.hospital_name, h.db_name, h.status, h.admin_email, h.address, h.contact_number, h.extra_data, h.created_at,
+             s.plan_name, s.bed_count, s.total_monthly_price, s.start_date, s.end_date
+      FROM hospitals h
+      LEFT JOIN subscriptions s ON h.id = s.hospital_id
+      WHERE h.id = ?
+    `;
+    
+    const [rows] = await masterPool.query(query, [hospitalId]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Hospital not found." });
+    }
+    
+    res.json(rows[0]);
+  } catch (error) {
+    console.error("Error fetching hospital details:", error);
+    res.status(500).json({ error: "Failed to fetch hospital details." });
+  }
+};
+
+exports.updateHospitalStatus = async (req, res, next) => {
+  try {
+    const hospitalId = req.params.id;
+    const { status } = req.body;
+    
+    if (!['Active', 'Suspended'].includes(status)) {
+      return res.status(400).json({ error: "Invalid status value." });
+    }
+
+    const masterPool = getMasterPool();
+
+    // Check if hospital exists
+    const [rows] = await masterPool.query("SELECT id, hospital_name, status FROM hospitals WHERE id = ?", [hospitalId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Hospital not found." });
+    }
+
+    const hospital = rows[0];
+    if (hospital.status === status) {
+      return res.status(400).json({ error: `Hospital is already ${status}.` });
+    }
+
+    await masterPool.query("UPDATE hospitals SET status = ? WHERE id = ?", [status, hospitalId]);
+
+    // Audit log
+    await masterPool.query(
+      "INSERT INTO master_audit_logs (admin_email, action, details) VALUES (?, ?, ?)",
+      [req.user.email || 'Super Admin', "UPDATE_HOSPITAL_STATUS", `Changed status of ${hospital.hospital_name} from ${hospital.status} to ${status}`]
+    );
+
+    res.json({ message: `Hospital status updated to ${status}.` });
+  } catch (error) {
+    console.error("Error updating hospital status:", error);
+    res.status(500).json({ error: "Failed to update hospital status." });
+  }
+};
