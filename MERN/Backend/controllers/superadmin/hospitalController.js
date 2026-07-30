@@ -12,7 +12,7 @@ exports.getHospitals = async (req, res, next) => {
     
     let query = `
       SELECT h.id, h.hospital_name, h.db_name, h.status, h.admin_email, h.created_at,
-             s.plan_name, s.bed_count, s.total_monthly_price
+             s.price_per_bed, s.discount_type, s.discount_value, s.discount_duration, s.bed_count, s.total_monthly_price
       FROM hospitals h
       LEFT JOIN subscriptions s ON h.id = s.hospital_id
     `;
@@ -20,9 +20,9 @@ exports.getHospitals = async (req, res, next) => {
     const queryParams = [];
 
     if (search) {
-      query += ` WHERE h.hospital_name LIKE ? OR s.plan_name LIKE ?`;
+      query += ` WHERE h.hospital_name LIKE ?`;
       const searchPattern = `%${search}%`;
-      queryParams.push(searchPattern, searchPattern);
+      queryParams.push(searchPattern);
     }
 
     // Fetch limit + 1 to determine hasMore
@@ -115,7 +115,7 @@ exports.getHospitalById = async (req, res, next) => {
     
     const query = `
       SELECT h.id, h.hospital_name, h.db_name, h.status, h.admin_email, h.address, h.contact_number, h.extra_data, h.created_at,
-             s.plan_name, s.bed_count, s.total_monthly_price, s.start_date, s.end_date
+             s.price_per_bed, s.discount_type, s.discount_value, s.discount_duration, s.bed_count, s.total_monthly_price, s.start_date, s.end_date
       FROM hospitals h
       LEFT JOIN subscriptions s ON h.id = s.hospital_id
       WHERE h.id = ?

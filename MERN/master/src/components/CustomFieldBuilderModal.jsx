@@ -14,11 +14,14 @@ export default function CustomFieldBuilderModal({ isOpen, onClose, formName, onF
       isRequired: false,
       optionsText: '',
       allowedTypes: '.pdf,.png,.jpg,.doc',
-      maxSizeMB: 10
+      maxSizeMB: 10,
+      isBillable: false,
+      billingFrequency: 'monthly'
     }
   });
 
   const selectedType = watch('fieldType');
+  const isBillableSelected = watch('isBillable');
 
   if (!isOpen) return null;
 
@@ -37,6 +40,11 @@ export default function CustomFieldBuilderModal({ isOpen, onClose, formName, onF
         fileConfig = {
           allowedTypes: data.allowedTypes,
           maxSizeMB: Number(data.maxSizeMB) || 10
+        };
+      } else if (data.fieldType === 'number') {
+        fileConfig = {
+          isBillable: Boolean(data.isBillable),
+          billingFrequency: data.isBillable ? data.billingFrequency : null
         };
       }
 
@@ -142,6 +150,38 @@ export default function CustomFieldBuilderModal({ isOpen, onClose, formName, onF
               </label>
             </div>
           </div>
+
+          {/* Conditional: Number Field Options */}
+          {selectedType === 'number' && (
+            <div className="form-group-item conditional-box animate-fade-in" style={{ padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+              <label className="toggle-switch-wrapper">
+                <input type="checkbox" {...register('isBillable')} />
+                <span className="toggle-slider" />
+                <span className="toggle-text" style={{ fontWeight: 500, color: '#334155' }}>Add this amount to the total hospital bill? (Billable Field)</span>
+              </label>
+              
+              {isBillableSelected && (
+                <div className="animate-fade-in" style={{ marginLeft: '40px', marginTop: '12px', paddingLeft: '16px', borderLeft: '2px solid #cbd5e1' }}>
+                  <label className="form-field-label" style={{ marginBottom: '8px', display: 'block' }}>Billing Frequency *</label>
+                  <div style={{ display: 'flex', gap: '20px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#475569', cursor: 'pointer' }}>
+                      <input type="radio" value="one_time" {...register('billingFrequency')} style={{ accentColor: '#2563eb', cursor: 'pointer' }} />
+                      One Time Charge
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#475569', cursor: 'pointer' }}>
+                      <input type="radio" value="monthly" {...register('billingFrequency')} style={{ accentColor: '#2563eb', cursor: 'pointer' }} />
+                      Monthly Recurring
+                    </label>
+                  </div>
+                  <p className="field-error-subtext" style={{ marginTop: '8px', color: '#64748b' }}>
+                    {watch('billingFrequency') === 'one_time' ? 
+                      "This amount will only be added to the hospital's first setup invoice." : 
+                      "This amount will be added to the hospital's final bill every single month."}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Conditional: Dropdown Options */}
           {['dropdown', 'radio', 'multi_select'].includes(selectedType) && (

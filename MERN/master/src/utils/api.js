@@ -25,17 +25,23 @@ api.interceptors.request.use(
 );
 
 // Response Interceptor: Handle Unauthorized / Expired session
+let isSessionExpiredAlertShown = false;
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      // Clear invalid credentials
-      localStorage.removeItem('superAdminToken');
-      localStorage.removeItem('superAdminUser');
-      
-      alert("Session Expired: Unauthorized access. You are being redirected to login.");
-      // Auto-logout: force reload so App.jsx picks up the null token and shows Login
-      window.location.href = '/';
+      if (!isSessionExpiredAlertShown) {
+        isSessionExpiredAlertShown = true;
+        
+        // Clear invalid credentials
+        localStorage.removeItem('superAdminToken');
+        localStorage.removeItem('superAdminUser');
+        
+        alert("Session Expired: Unauthorized access. You are being redirected to login.");
+        // Auto-logout: force reload so App.jsx picks up the null token and shows Login
+        window.location.href = '/';
+      }
     }
     return Promise.reject(error);
   }

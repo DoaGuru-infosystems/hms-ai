@@ -6,7 +6,6 @@ import {
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 export default function OverviewTab({ 
-  setIsAddHospitalOpen, 
   setCurrentTab, 
   setSelectedInvoice, 
   isLoadingHospitals, 
@@ -31,7 +30,7 @@ export default function OverviewTab({
         <div className="avatar-stack-container" style={{ gap: '16px' }}>
           <button 
             className="btn-primary-dark" 
-            onClick={() => setIsAddHospitalOpen(true)}
+            onClick={() => setCurrentTab('add_hospital')}
             style={{ padding: '8px 18px', fontSize: '13px', borderRadius: '99px', display: 'flex', alignItems: 'center', gap: '6px', background: '#0f172a', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: '600' }}
           >
             <Plus size={16} /> Onboard Hospital

@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { 
   Building2, X, AlertCircle, Loader2, Server, Database, Edit,
   ShieldAlert, RefreshCcw, Info, PowerOff, CheckCircle2, BedDouble,
-  User, Mail, Phone, MapPin, CalendarDays, DollarSign, List, Activity
+  User, Mail, Phone, MapPin, CalendarDays, DollarSign, List, Activity, Calculator
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { superAdminHospitals, superAdminCustomFields } from '../utils/api';
 
 export default function HospitalDetailModal({ isOpen, onClose, hospitalId }) {
   const [customFields, setCustomFields] = useState([]);
+  const [isCustomFieldsLoaded, setIsCustomFieldsLoaded] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: hospital, isLoading, isError, error } = useQuery({
@@ -22,9 +23,16 @@ export default function HospitalDetailModal({ isOpen, onClose, hospitalId }) {
 
   useEffect(() => {
     if (isOpen) {
+      setIsCustomFieldsLoaded(false);
       superAdminCustomFields.getByForm('add_hospital')
-        .then(res => setCustomFields(res.data))
-        .catch(err => console.error("Could not load custom fields:", err));
+        .then(res => {
+          setCustomFields(res.data);
+          setIsCustomFieldsLoaded(true);
+        })
+        .catch(err => {
+          console.error("Could not load custom fields:", err);
+          setIsCustomFieldsLoaded(true); // Proceed even on error
+        });
     }
   }, [isOpen]);
 
@@ -143,40 +151,56 @@ export default function HospitalDetailModal({ isOpen, onClose, hospitalId }) {
                     <span className="detail-label" style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}><Phone size={14} /> Contact Number</span>
                     <div className="detail-value" style={{ fontSize: '14px', color: '#334155', marginTop: '4px', fontWeight: 500 }}>{hospital.contact_number || 'N/A'}</div>
                   </div>
-                  {hasExtraData && Object.entries(extraData).map(([key, value]) => {
+                  {isCustomFieldsLoaded && hasExtraData && Object.entries(extraData).map(([key, value]) => {
                     const fieldDef = customFields.find(f => f.field_name === key);
-                    const displayLabel = fieldDef ? fieldDef.field_label : key.replace(/_/g, ' ');
+                    
+                    // Do not display if the custom field was deleted from the configuration
+                    if (!fieldDef) return null;
+
+                    // Do not display if the value is empty, null, or undefined
+                    if (value === null || value === undefined || value === '') return null;
                     
                     return (
                       <div className="detail-item" key={key}>
-                        <span className="detail-label" style={{ textTransform: 'capitalize', fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}><List size={14} /> {displayLabel}</span>
-                        <div className="detail-value" style={{ fontSize: '14px', color: '#334155', marginTop: '4px', fontWeight: 500 }}>{value?.toString() || 'N/A'}</div>
+                        <span className="detail-label" style={{ textTransform: 'capitalize', fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}><List size={14} /> {fieldDef.field_label}</span>
+                        <div className="detail-value" style={{ fontSize: '14px', color: '#334155', marginTop: '4px', fontWeight: 500 }}>{value.toString()}</div>
                       </div>
                     );
                   })}
                 </div>
 
-                <div className="form-grid-2col" style={{ gap: '20px', marginTop: '24px' }}>
-                  <div className="price-calc-card">
-                    <div className="price-calc-header">
-                      <BedDouble size={16} className="calc-icon" />
-                      <span>Managed Bed Count</span>
+                {(() => {
+                  const basePrice = Number(hospital.bed_count || 0) * Number(hospital.price_per_bed || 300);
+                  let discountAmount = 0;
+                  if (hospital.discount_type === 'percentage') {
+                    discountAmount = basePrice * (Number(hospital.discount_value || 0) / 100);
+                  } else if (hospital.discount_type === 'fixed') {
+                    discountAmount = Number(hospital.discount_value || 0);
+                  }
+
+                  return (
+                    <div className="price-calc-card" style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px' }}>
+                      <div className="price-calc-header" style={{ marginBottom: '8px' }}>
+                        <Calculator size={16} className="calc-icon" />
+                        <span>Monthly Subscription Pricing Breakdown</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#64748b' }}>
+                        <span>Base Price ({hospital.bed_count || 0} beds × ₹{hospital.price_per_bed || 300})</span>
+                        <span>₹ {basePrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                      </div>
+                      {hospital.discount_type && hospital.discount_type !== 'none' && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#ef4444' }}>
+                          <span>Discount Applied ({hospital.discount_type === 'percentage' ? `${hospital.discount_value}%` : 'Fixed'} - {hospital.discount_duration === 'one_time' ? 'One-Time Setup' : 'Lifetime'})</span>
+                          <span>- ₹ {discountAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 'bold', color: '#1e293b', borderTop: '1px solid #e2e8f0', paddingTop: '10px', marginTop: '6px' }}>
+                        <span>Final Monthly Price</span>
+                        <span>₹ {Number(hospital.total_monthly_price || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                      </div>
                     </div>
-                    <div className="price-amount-display">
-                      {hospital.bed_count || 0} Beds
-                    </div>
-                  </div>
-                  
-                  <div className="price-calc-card">
-                    <div className="price-calc-header">
-                      <DollarSign size={16} className="calc-icon" />
-                      <span>Monthly Subscription Price</span>
-                    </div>
-                    <div className="price-amount-display">
-                      ₹ {Number(hospital.total_monthly_price || 0).toLocaleString('en-IN')} <span className="per-month-text">/ month</span>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
 
               {/* SECTION 2: PROVISIONING STATUS */}

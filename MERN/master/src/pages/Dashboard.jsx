@@ -8,7 +8,7 @@ import {
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { superAdminDashboard, superAdminHospitals } from '../utils/api';
-import AddHospitalModal from '../components/AddHospitalModal';
+import AddHospitalTab from '../components/Dashboard/AddHospitalTab';
 import HospitalDetailModal from '../components/HospitalDetailModal';
 import OverviewTab from '../components/Dashboard/OverviewTab';
 import HospitalsTab from '../components/Dashboard/HospitalsTab';
@@ -19,7 +19,6 @@ import PaymentsTab from '../components/Dashboard/PaymentsTab';
 export default function Dashboard({ onLogout }) {
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [isAddHospitalOpen, setIsAddHospitalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [selectedHospitalId, setSelectedHospitalId] = useState(null);
@@ -282,7 +281,7 @@ export default function Dashboard({ onLogout }) {
           </div>
         ) : (
           <>
-            {currentTab === 'dashboard' && <OverviewTab setIsAddHospitalOpen={setIsAddHospitalOpen} setCurrentTab={setCurrentTab} setSelectedInvoice={setSelectedInvoice} isLoadingHospitals={isLoadingHospitals} hospitalsList={hospitalsList} stats={stats} />}
+            {currentTab === 'dashboard' && <OverviewTab setCurrentTab={setCurrentTab} setSelectedInvoice={setSelectedInvoice} isLoadingHospitals={isLoadingHospitals} hospitalsList={hospitalsList} stats={stats} />}
           {currentTab === 'hospitals' && (
             <HospitalsTab 
               searchInput={searchInput} 
@@ -298,24 +297,23 @@ export default function Dashboard({ onLogout }) {
           {currentTab === 'subscriptions' && <SubscriptionsTab mockSubscriptions={mockSubscriptions} />}
             {currentTab === 'payments' && <PaymentsTab mockPayments={mockPayments} setSelectedInvoice={setSelectedInvoice} />}
             {currentTab === 'audit' && <AuditLogsTab mockAuditLogs={mockAuditLogs} />}
+            {currentTab === 'add_hospital' && (
+              <AddHospitalTab 
+                setCurrentTab={setCurrentTab}
+                onSuccess={() => { loadData(); handleHospitalAdded(); setCurrentTab('hospitals'); }}
+              />
+            )}
           </>
         )}
       </div>
 
       {/* Floating Buttons */}
       <div className="floating-actions">
-        <button className="floating-btn primary" title="Onboard New Hospital" onClick={() => setIsAddHospitalOpen(true)}>
+        <button className="floating-btn primary" title="Onboard New Hospital" onClick={() => { setCurrentTab('add_hospital'); setSelectedInvoice(null); }}>
           <Plus size={20} />
         </button>
         <button className="floating-btn" title="View Alerts"><ShieldAlert size={20} /></button>
       </div>
-
-      {/* Add Hospital Modal with Dynamic Custom Fields */}
-      <AddHospitalModal
-        isOpen={isAddHospitalOpen}
-        onClose={() => setIsAddHospitalOpen(false)}
-        onSuccess={() => { loadData(); handleHospitalAdded(); }}
-      />
 
       {/* Logout Confirmation Modal */}
       {isLogoutModalOpen && (

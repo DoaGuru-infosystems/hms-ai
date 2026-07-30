@@ -101,9 +101,11 @@ const initMasterTables = async () => {
       CREATE TABLE IF NOT EXISTS subscriptions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         hospital_id INT NOT NULL,
-        plan_name VARCHAR(100) DEFAULT 'Standard',
         bed_count INT NOT NULL,
         price_per_bed DECIMAL(10,2) DEFAULT 300.00,
+        discount_type ENUM('percentage', 'fixed', 'none') DEFAULT 'none',
+        discount_value DECIMAL(10,2) DEFAULT 0.00,
+        discount_duration ENUM('lifetime', 'one_time') DEFAULT 'lifetime',
         total_monthly_price DECIMAL(10,2) NOT NULL,
         start_date DATE NOT NULL,
         end_date DATE,

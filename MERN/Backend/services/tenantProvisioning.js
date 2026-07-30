@@ -11,7 +11,8 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
  */
 const onboardNewHospital = async (hospitalData) => {
   const { 
-    hospitalName, bedsCount, adminEmail, adminUsername, adminPassword,
+    hospitalName, bedsCount, ratePerBed = 300, discountType = 'none', discountValue = 0, discountDuration = 'lifetime',
+    adminEmail, adminUsername, adminPassword,
     address, contactNumber, extraData 
   } = hospitalData;
   const masterPool = getMasterPool();
@@ -49,12 +50,21 @@ const onboardNewHospital = async (hospitalData) => {
     hospitalId = hospitalInsert.insertId;
 
     // 3. Insert Subscriptions
-    const totalMonthlyPrice = bedsCount * 300.00;
+    const basePrice = bedsCount * ratePerBed;
+    let totalMonthlyPrice = basePrice;
+    
+    if (discountType === 'percentage') {
+      totalMonthlyPrice = basePrice - (basePrice * (discountValue / 100));
+    } else if (discountType === 'fixed') {
+      totalMonthlyPrice = basePrice - discountValue;
+    }
+    totalMonthlyPrice = Math.max(0, totalMonthlyPrice); // Prevent negative pricing
+
     const startDate = new Date();
     await masterPool.query(
-      `INSERT INTO subscriptions (hospital_id, bed_count, total_monthly_price, start_date)
-       VALUES (?, ?, ?, ?)`,
-      [hospitalId, bedsCount, totalMonthlyPrice, startDate]
+      `INSERT INTO subscriptions (hospital_id, bed_count, price_per_bed, discount_type, discount_value, discount_duration, total_monthly_price, start_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [hospitalId, bedsCount, ratePerBed, discountType, discountValue, discountDuration, totalMonthlyPrice, startDate]
     );
 
     // 4. Provision Database (With Retry Logic)
