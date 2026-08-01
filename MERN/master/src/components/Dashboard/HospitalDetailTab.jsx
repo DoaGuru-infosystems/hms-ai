@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Building2, X, AlertCircle, Loader2, Server, Database, Edit,
-  ShieldAlert, RefreshCcw, Info, PowerOff, CheckCircle2, BedDouble,
+  ShieldAlert, RefreshCcw, Info, PowerOff, CheckCircle2, BedDouble, ArrowLeft,
   User, Mail, Phone, MapPin, CalendarDays, DollarSign, List, Activity, Calculator
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { superAdminHospitals, superAdminCustomFields } from '../utils/api';
+import { superAdminHospitals, superAdminCustomFields } from '../../utils/api';
 
-export default function HospitalDetailModal({ isOpen, onClose, hospitalId }) {
+export default function HospitalDetailTab({ onClose, hospitalId }) {
   const [customFields, setCustomFields] = useState([]);
   const [isCustomFieldsLoaded, setIsCustomFieldsLoaded] = useState(false);
   const queryClient = useQueryClient();
@@ -18,11 +18,11 @@ export default function HospitalDetailModal({ isOpen, onClose, hospitalId }) {
       const response = await superAdminHospitals.getById(hospitalId);
       return response.data;
     },
-    enabled: !!hospitalId && isOpen,
+    enabled: !!hospitalId,
   });
 
   useEffect(() => {
-    if (isOpen) {
+    if (hospitalId) {
       setIsCustomFieldsLoaded(false);
       superAdminCustomFields.getByForm('add_hospital')
         .then(res => {
@@ -34,7 +34,7 @@ export default function HospitalDetailModal({ isOpen, onClose, hospitalId }) {
           setIsCustomFieldsLoaded(true); // Proceed even on error
         });
     }
-  }, [isOpen]);
+  }, [hospitalId]);
 
   const updateStatusMutation = useMutation({
     mutationFn: (newStatus) => superAdminHospitals.updateStatus(hospitalId, newStatus),
@@ -52,7 +52,7 @@ export default function HospitalDetailModal({ isOpen, onClose, hospitalId }) {
     }
   });
 
-  if (!isOpen) return null;
+  if (!hospitalId) return null;
 
   const handleToggleStatus = () => {
     if (!hospital) return;
@@ -85,24 +85,33 @@ export default function HospitalDetailModal({ isOpen, onClose, hospitalId }) {
   const hasExtraData = Object.keys(extraData).length > 0;
 
   return (
-    <div className="modal-backdrop animate-fade-in">
-      <div className="add-hospital-modal-card animate-slide-up" style={{ maxWidth: '800px' }}>
+    <div className="animate-fade-in" style={{ padding: '24px', height: '100%', overflowY: 'auto' }}>
+      <div style={{ width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {/* Top Bar Header */}
-        <div className="modal-header-bar">
-          <div className="modal-title-group">
-            <div className="modal-icon-avatar">
-              <Building2 size={20} className="header-icon-svg" />
-            </div>
-            <div>
-              <h2 className="modal-title">{hospital?.hospital_name || 'Loading...'}</h2>
-              <div style={{ marginTop: '4px' }}>
-                {hospital && getStatusBadge(hospital.status)}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="btn-secondary"
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', color: '#475569', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+            >
+              <ArrowLeft size={18} />
+              Back
+            </button>
+            <div style={{ height: '32px', width: '1px', background: '#e2e8f0' }}></div>
+            <div className="modal-title-group" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div className="modal-icon-avatar">
+                <Building2 size={20} className="header-icon-svg" />
+              </div>
+              <div>
+                <h2 className="modal-title" style={{ margin: 0, lineHeight: 1.2 }}>{hospital?.hospital_name || 'Loading...'}</h2>
+                <div style={{ marginTop: '4px' }}>
+                  {hospital && getStatusBadge(hospital.status)}
+                </div>
               </div>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="modal-close-btn">
-            <X size={18} />
-          </button>
         </div>
 
         {/* API Error Alert */}
@@ -116,7 +125,7 @@ export default function HospitalDetailModal({ isOpen, onClose, hospitalId }) {
         )}
 
         {/* Main Content Body */}
-        <div className="modal-form-body" style={{ paddingBottom: '30px' }}>
+        <div style={{ paddingBottom: '30px' }}>
           
           {isLoading ? (
             <div className="flex-center" style={{ padding: '40px', color: '#6366f1' }}>

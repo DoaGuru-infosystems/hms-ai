@@ -28,7 +28,7 @@ exports.getCustomFieldsByForm = async (req, res) => {
 // Create / Register a new custom field for a form
 exports.createCustomField = async (req, res) => {
   try {
-    const { formName, fieldLabel, fieldType, isRequired, options, fileConfig } = req.body;
+    const { formName, fieldLabel, fieldType, isRequired, options, fileConfig, isBillable, billingFrequency } = req.body;
 
     if (!formName || !fieldLabel || !fieldType) {
       return res.status(400).json({ error: "Form name, field label, and field type are required." });
@@ -41,13 +41,15 @@ exports.createCustomField = async (req, res) => {
     const optionsJson = options && Array.isArray(options) ? JSON.stringify(options) : null;
     const fileConfigJson = fileConfig ? JSON.stringify(fileConfig) : null;
     const isReqVal = isRequired ? 1 : 0;
+    const isBillableVal = isBillable ? 1 : 0;
+    const billingFreqVal = (isBillable && billingFrequency) ? billingFrequency : null;
 
     const masterPool = getMasterPool();
     const [result] = await masterPool.query(
       `INSERT INTO custom_fields_config 
-       (form_name, field_name, field_label, field_type, is_required, options_json, file_config_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [formName, fieldName, fieldLabel, fieldType, isReqVal, optionsJson, fileConfigJson]
+       (form_name, field_name, field_label, field_type, is_required, options_json, file_config_json, is_billable, billing_frequency)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [formName, fieldName, fieldLabel, fieldType, isReqVal, optionsJson, fileConfigJson, isBillableVal, billingFreqVal]
     );
 
     res.status(201).json({
@@ -57,6 +59,8 @@ exports.createCustomField = async (req, res) => {
       field_label: fieldLabel,
       field_type: fieldType,
       is_required: Boolean(isRequired),
+      is_billable: Boolean(isBillable),
+      billing_frequency: billingFreqVal,
       options: options || [],
       file_config: fileConfig || null
     });

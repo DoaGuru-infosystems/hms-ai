@@ -74,4 +74,14 @@ export const superAdminCustomFields = {
   delete: (id) => api.delete(`/superadmin/custom-fields/${id}`)
 };
 
+export const superAdminBilling = {
+  getInvoices: (params = {}) => {
+    const { page = 1, limit = 10, search = '', status = 'All' } = params;
+    return api.get(`/superadmin/invoices?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}`);
+  },
+  getInvoiceById: (id) => api.get(`/superadmin/invoices/${id}`),
+  downloadPDF: (id) => api.get(`/superadmin/invoices/${id}/pdf`, { responseType: 'blob' }),
+  sendReminder: (data) => api.post('/superadmin/invoices/send-reminder', data)
+};
+
 export default api;

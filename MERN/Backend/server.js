@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const db = require("./config/db");
 const { connectMasterDB } = require("./config/masterDb");
+const initCronJobs = require("./cron/billingCron");
 const apiRouter = require("./routes/index");
 const errorMiddleware = require("./middlewares/errorMiddleware");
 
@@ -15,7 +16,9 @@ app.use(express.json());
 
 // Connect Databases
 db.connectDB(); // Legacy/Fallback Tenant DB
-connectMasterDB().catch(err => console.error("Master DB Init Failed:", err));
+connectMasterDB().then(() => {
+  initCronJobs();
+}).catch(err => console.error("Master DB Init Failed:", err));
 
 // Health Check / Welcome Endpoint
 app.get("/", (req, res) => {
