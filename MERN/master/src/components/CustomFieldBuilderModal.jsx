@@ -42,10 +42,7 @@ export default function CustomFieldBuilderModal({ isOpen, onClose, formName, onF
           maxSizeMB: Number(data.maxSizeMB) || 10
         };
       } else if (data.fieldType === 'number') {
-        fileConfig = {
-          isBillable: Boolean(data.isBillable),
-          billingFrequency: data.isBillable ? data.billingFrequency : null
-        };
+        fileConfig = null; // Billing fields moved to root level
       }
 
       const payload = {
@@ -54,7 +51,9 @@ export default function CustomFieldBuilderModal({ isOpen, onClose, formName, onF
         fieldType: data.fieldType,
         isRequired: data.isRequired,
         options: parsedOptions,
-        fileConfig: fileConfig
+        fileConfig: fileConfig,
+        isBillable: data.fieldType === 'number' ? Boolean(data.isBillable) : false,
+        billingFrequency: (data.fieldType === 'number' && data.isBillable) ? data.billingFrequency : null
       };
 
       const res = await superAdminCustomFields.create(payload);

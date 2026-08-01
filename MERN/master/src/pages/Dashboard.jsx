@@ -9,7 +9,9 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { superAdminDashboard, superAdminHospitals } from '../utils/api';
 import AddHospitalTab from '../components/Dashboard/AddHospitalTab';
-import HospitalDetailModal from '../components/HospitalDetailModal';
+import HospitalDetailTab from '../components/Dashboard/HospitalDetailTab';
+import InvoiceDetailTab from '../components/Dashboard/InvoiceDetailTab';
+import ManualReminderModal from '../components/Dashboard/ManualReminderModal';
 import OverviewTab from '../components/Dashboard/OverviewTab';
 import HospitalsTab from '../components/Dashboard/HospitalsTab';
 import SubscriptionsTab from '../components/Dashboard/SubscriptionsTab';
@@ -26,6 +28,10 @@ export default function Dashboard({ onLogout }) {
   // Backend state
   const [stats, setStats] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
+  
+  // Billing state
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
+  const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
 
   // Search states
   const [searchInput, setSearchInput] = useState('');
@@ -291,16 +297,23 @@ export default function Dashboard({ onLogout }) {
               isLoadingHospitals={isLoadingHospitals} 
               hospitalsList={hospitalsList} 
               isFetchingNextPage={isFetchingNextPage}
-              onRowClick={(id) => setSelectedHospitalId(id)}
+              onRowClick={(id) => { setSelectedHospitalId(id); setCurrentTab('hospital_detail'); }}
             />
           )}
           {currentTab === 'subscriptions' && <SubscriptionsTab mockSubscriptions={mockSubscriptions} />}
-            {currentTab === 'payments' && <PaymentsTab mockPayments={mockPayments} setSelectedInvoice={setSelectedInvoice} />}
+          {currentTab === 'payments' && <PaymentsTab setCurrentTab={setCurrentTab} setSelectedInvoiceId={setSelectedInvoiceId} onOpenReminderModal={() => setIsReminderModalOpen(true)} />}
+          {currentTab === 'invoice_detail' && <InvoiceDetailTab invoiceId={selectedInvoiceId} onBack={() => setCurrentTab('payments')} />}
             {currentTab === 'audit' && <AuditLogsTab mockAuditLogs={mockAuditLogs} />}
             {currentTab === 'add_hospital' && (
               <AddHospitalTab 
                 setCurrentTab={setCurrentTab}
                 onSuccess={() => { loadData(); handleHospitalAdded(); setCurrentTab('hospitals'); }}
+              />
+            )}
+            {currentTab === 'hospital_detail' && (
+              <HospitalDetailTab 
+                hospitalId={selectedHospitalId}
+                onClose={() => { setSelectedHospitalId(null); setCurrentTab('hospitals'); }}
               />
             )}
           </>
@@ -350,12 +363,12 @@ export default function Dashboard({ onLogout }) {
         </div>
       )}
 
-      {/* Hospital Detail Modal */}
-      <HospitalDetailModal 
-        isOpen={!!selectedHospitalId}
-        onClose={() => setSelectedHospitalId(null)}
-        hospitalId={selectedHospitalId}
+      {/* Manual Reminder Modal */}
+      <ManualReminderModal 
+        isOpen={isReminderModalOpen} 
+        onClose={() => setIsReminderModalOpen(false)} 
       />
+
     </div>
   );
 }

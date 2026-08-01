@@ -91,10 +91,16 @@ const initMasterTables = async () => {
         is_required TINYINT(1) DEFAULT 0,
         options_json JSON NULL,
         file_config_json JSON NULL,
+        is_billable TINYINT(1) DEFAULT 0,
+        billing_frequency ENUM('one_time', 'monthly_recurring') NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE KEY unique_form_field (form_name, field_name)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
+
+    // ALTER TABLE for custom_fields_config if columns don't exist
+    try { await connection.query("ALTER TABLE custom_fields_config ADD COLUMN is_billable TINYINT(1) DEFAULT 0"); } catch (e) {}
+    try { await connection.query("ALTER TABLE custom_fields_config ADD COLUMN billing_frequency ENUM('one_time', 'monthly_recurring') NULL"); } catch (e) {}
 
     // Subscriptions Table
     await connection.query(`
@@ -138,21 +144,56 @@ const initMasterTables = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
+    // Invoices Table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS invoices (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        hospital_id INT NOT NULL,
+        invoice_number VARCHAR(100) UNIQUE NOT NULL,
+        amount DECIMAL(10,2) NOT NULL,
+        due_date DATE NOT NULL,
+        status ENUM('Pending', 'Paid', 'Overdue', 'Cancelled') DEFAULT 'Pending',
+        breakdown_json JSON NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // Notification Logs Table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS notification_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        hospital_id INT NOT NULL,
+        type ENUM('reminder', 'broadcast', 'alert') NOT NULL,
+        channel ENUM('email', 'whatsapp', 'both') NOT NULL,
+        message TEXT NOT NULL,
+        status ENUM('scheduled', 'sent', 'failed') DEFAULT 'sent',
+        scheduled_at DATETIME NULL,
+        sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
     // Payments Table (For Subscription Payment Gateway Logs)
     await connection.query(`
       CREATE TABLE IF NOT EXISTS hospital_payments (
         id INT AUTO_INCREMENT PRIMARY KEY,
         hospital_id INT NOT NULL,
         subscription_id INT NOT NULL,
+        invoice_id INT NULL,
         amount DECIMAL(10,2) NOT NULL,
         transaction_id VARCHAR(100) UNIQUE,
         payment_status ENUM('Pending', 'Completed', 'Failed', 'Refunded') DEFAULT 'Pending',
         payment_method VARCHAR(50) DEFAULT 'Online Gateway',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE CASCADE,
-        FOREIGN KEY (subscription_id) REFERENCES subscriptions(id) ON DELETE CASCADE
+        FOREIGN KEY (subscription_id) REFERENCES subscriptions(id) ON DELETE CASCADE,
+        FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE SET NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
+
+    try { await connection.query("ALTER TABLE hospital_payments ADD COLUMN invoice_id INT NULL"); } catch (e) {}
+    try { await connection.query("ALTER TABLE hospital_payments ADD CONSTRAINT fk_invoice FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE SET NULL"); } catch (e) {}
     
     // Check if default super admin exists
     const [rows] = await connection.query('SELECT * FROM super_admins WHERE email = ?', ['superadmin@hms.com']);
